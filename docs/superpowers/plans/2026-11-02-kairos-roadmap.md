@@ -8,7 +8,7 @@ La conception (`docs/superpowers/specs/2026-11-02-kairos-design.md`) couvre cinq
 | 2 | Socle de l'application | Nuxt 4 + Vuetify 4 + Drizzle (PGlite en test et en local, PostgreSQL en production) : comptes sur invitation, catalogue partagé et son journal, exemplaires, états, lieux, achats et ventes (lots, frais, port), livraisons, personnes, dettes, ajout manuel par texte | — |
 | 3 | Relevés et valeur | Worker de relevés (planifié + bouton), saisie manuelle des prix vus sur Vinted / Leboncoin, historique par source et par état, correspondance d'états, valeur par exemplaire, courbes, tableau de bord | 1, 2 |
 | 4 | Scan | Code-barres dans Safari (catalogue, Open Beauty Facts, UPCitemdb), certificat PSA, apprentissage EAN → produit, reconnaissance photo (OCR + empreintes CLIP calculées sur le serveur), candidats | 2 |
-| 5 | Hébergement | VPS OVHcloud (x86, Ubuntu 24.04) avec un domaine OVHcloud, Docker Compose (application, PostgreSQL 17, Caddy, sauvegardes ; DuckDNS et copie hors machine en option), PWA, déploiement avec retour arrière, mode sans photo si la mémoire manque | 1, 2 |
+| 5 | Hébergement | VPS OVHcloud (x86, Ubuntu 26.04) avec un domaine OVHcloud, Docker Compose (application, PostgreSQL 17, Caddy, sauvegardes ; DuckDNS et copie hors machine en option), PWA, déploiement avec retour arrière, mode sans photo si la mémoire manque | 1, 2 |
 
 Révision 2 du 2026-11-02 : le relevé par navigateur automatisé est abandonné, car tous les sites le bloquent et le contournement est exclu. Seules restent les voies officielles, et l'application n'a pas besoin de navigateur automatisé sur le serveur.
 
@@ -34,7 +34,7 @@ La refonte « Coffre » applique le thème sombre à tous les écrans, sur ordin
 
 ## À faire par l'auteur
 
-- **VPS OVHcloud** (VPS-1 4 Go ou VPS-2 8 Go, Ubuntu 24.04) et sa clé SSH : guide d'installation, étapes 1 à 3.
+- **VPS OVHcloud** (VPS-3 12 Go, Ubuntu 26.04) et sa clé SSH : guide d'installation, étapes 1 à 3.
 - **Entrée DNS** du domaine OVHcloud vers le VPS (A, et AAAA si l'IPv6 du VPS est configurée) : étape 4. DuckDNS seulement sans domaine à vous : annexe A.
 - **Clés de l'application** dans `deploy/.env` : `EBAY_CLIENT_ID` et `EBAY_CLIENT_SECRET` (clés eBay de production ; sans elles la source eBay reste désactivée), et en option `POKEMONTCG_API_KEY` et `PSA_API_TOKEN`.
 - Facultatif, **secrets de la sonde** dans GitHub (Settings › Secrets and variables › Actions) pour le workflow « Probe price and identification sources » : `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `POKEMONTCG_API_KEY`, `PSA_API_TOKEN` et `PSA_PROBE_CERTIFICATE` (un numéro de certificat PSA réel). Pour lancer la sonde sur votre ordinateur (`npm run probe`), mettez les mêmes variables dans le `.env` à la racine du dépôt ; `PSA_PROBE_CERTIFICATE` ne sert qu'à la sonde et n'a rien à faire dans `deploy/.env`.

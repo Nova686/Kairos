@@ -11,9 +11,11 @@ Les écrans de l'espace client OVHcloud changent de temps en temps. Quand un int
 ## 1. Choisir et commander le VPS
 
 - **Modèle** : un VPS **x86**.
+  - **VPS-3 (12 Go de mémoire)** laisse de la place à d'autres projets à côté de Kairos.
   - **VPS-2 (8 Go de mémoire)** donne de la marge à la reconnaissance par photo, qui télécharge et fait tourner des modèles.
   - **VPS-1 (4 Go)** fait tourner Kairos. Prévoyez alors l'espace d'échange de l'étape 7. Si la mémoire manque, passez la reconnaissance par photo à `off` (étape 6) : l'onglet Photo disparaît et le reste fonctionne.
-- **Système** : **Ubuntu 24.04**.
+- **Système** : **Ubuntu 26.04 LTS** (ou 24.04 LTS), sans application préinstallée : l'étape 3 installe Docker.
+- **Localisation** : la plus proche de vos utilisateurs parmi celles en stock ; le Canada fonctionne, avec 0,1 à 0,2 s de plus par action depuis la France.
 - **Accès** : si la commande propose d'ajouter une clé SSH, donnez la clé publique de l'étape 2. Sinon, OVHcloud envoie par mail les identifiants de la première connexion. Ajoutez alors votre clé à l'étape 3 et ne gardez pas le mot de passe reçu.
 
 Une fois le VPS livré, notez depuis le mail de livraison ou l'espace client :
