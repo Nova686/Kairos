@@ -47,7 +47,6 @@ const toDraft = (product: Product): ProductDraft => ({
   imageUrl: product.imageUrl,
   cardmarketProductId: product.cardmarketProductId,
   tcgdexCardId: product.tcgdexCardId,
-  pokemontcgCardId: product.pokemontcgCardId,
   ebayQuery: product.ebayQuery,
   ebayExcludedKeywords: product.ebayExcludedKeywords,
 })

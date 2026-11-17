@@ -32,7 +32,6 @@ const countingGateway = () => {
     },
     cardmarketAggregates: async () => new Map(),
     tcgdexAggregate: async () => null,
-    pokemontcgAggregate: async () => null,
   }
   return { gateway, calls }
 }

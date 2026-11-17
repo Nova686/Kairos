@@ -4,7 +4,7 @@ La conception (`docs/superpowers/specs/2026-11-02-kairos-design.md`) couvre cinq
 
 | # | Plan | Livre | Dépend de |
 |---|------|-------|-----------|
-| 1 | Adaptateurs de sources | Adaptateurs officiels : eBay (API Browse), Cardmarket (fichiers publics), TCGdex, pokemontcg.io, PSA, Open Beauty Facts, UPCitemdb ; sonde locale et GitHub Actions ; rapport | — |
+| 1 | Adaptateurs de sources | Adaptateurs officiels : eBay (API Browse), Cardmarket (fichiers publics), TCGdex, PSA, Open Beauty Facts, UPCitemdb ; sonde locale et GitHub Actions ; rapport | — |
 | 2 | Socle de l'application | Nuxt 4 + Vuetify 4 + Drizzle (PGlite en test et en local, PostgreSQL en production) : comptes sur invitation, catalogue partagé et son journal, exemplaires, états, lieux, achats et ventes (lots, frais, port), livraisons, personnes, dettes, ajout manuel par texte | — |
 | 3 | Relevés et valeur | Worker de relevés (planifié + bouton), saisie manuelle des prix vus sur Vinted / Leboncoin, historique par source et par état, correspondance d'états, valeur par exemplaire, courbes, tableau de bord | 1, 2 |
 | 4 | Scan | Code-barres dans Safari (catalogue, Open Beauty Facts, UPCitemdb), certificat PSA, apprentissage EAN → produit, reconnaissance photo (OCR + empreintes CLIP calculées sur le serveur), candidats | 2 |
@@ -36,8 +36,8 @@ La refonte « Coffre » applique le thème sombre à tous les écrans, sur ordin
 
 - **VPS OVHcloud** (VPS-3 12 Go, Ubuntu 26.04) et sa clé SSH : guide d'installation, étapes 1 à 3.
 - **Entrée DNS** du domaine OVHcloud vers le VPS (A, et AAAA si l'IPv6 du VPS est configurée) : étape 4. DuckDNS seulement sans domaine à vous : annexe A.
-- **Clés de l'application** dans `deploy/.env` : `EBAY_CLIENT_ID` et `EBAY_CLIENT_SECRET` (clés eBay de production ; sans elles la source eBay reste désactivée), et en option `POKEMONTCG_API_KEY` et `PSA_API_TOKEN`.
-- Facultatif, **secrets de la sonde** dans GitHub (Settings › Secrets and variables › Actions) pour le workflow « Probe price and identification sources » : `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `POKEMONTCG_API_KEY`, `PSA_API_TOKEN` et `PSA_PROBE_CERTIFICATE` (un numéro de certificat PSA réel). Pour lancer la sonde sur votre ordinateur (`npm run probe`), mettez les mêmes variables dans le `.env` à la racine du dépôt ; `PSA_PROBE_CERTIFICATE` ne sert qu'à la sonde et n'a rien à faire dans `deploy/.env`.
+- **Clés de l'application** dans `deploy/.env` : `EBAY_CLIENT_ID` et `EBAY_CLIENT_SECRET` (clés eBay de production ; sans elles la source eBay reste désactivée), et en option `PSA_API_TOKEN`.
+- Facultatif, **secrets de la sonde** dans GitHub (Settings › Secrets and variables › Actions) pour le workflow « Probe price and identification sources » : `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `PSA_API_TOKEN` et `PSA_PROBE_CERTIFICATE` (un numéro de certificat PSA réel). Pour lancer la sonde sur votre ordinateur (`npm run probe`), mettez les mêmes variables dans le `.env` à la racine du dépôt ; `PSA_PROBE_CERTIFICATE` ne sert qu'à la sonde et n'a rien à faire dans `deploy/.env`.
 - **Secrets GitHub du déploiement** (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_HOST_FINGERPRINT`, `DEPLOY_SSH_KEY`) pour lancer le workflow « deploy » depuis GitHub : étape 10. Sans eux, `./deploy/deploy.sh` sur la machine suffit.
 - **Minutes GitHub Actions** : le dépôt est privé, donc les workflows consomment le quota gratuit du compte (2 000 minutes par mois sur l'offre GitHub Free). Chaque mise à jour d'une pull request relance les tests et la construction de l'image. Surveillez la consommation dans Settings › Billing and plans et laissez la limite de dépense à 0 $, pour que rien ne soit facturé.
 - **Fusionner la PR #1 dans `main`** : le script de déploiement et le workflow « deploy » installent `origin/main`.

@@ -4,7 +4,6 @@ import type { CompiledTitleRules, ConditionMappingEntry, TitleConditionRuleEntry
 import { downloadCardmarketPriceGuide, pokemonGameId } from '../../../src/price-sources/cardmarket/cardmarket-files.ts'
 import { parseCardmarketPriceGuide } from '../../../src/price-sources/cardmarket/parse-cardmarket-price-guide.ts'
 import { searchEbayListings } from '../../../src/price-sources/ebay/ebay-adapter.ts'
-import { fetchPokemontcgCardAggregate } from '../../../src/price-sources/pokemontcg/pokemontcg-adapter.ts'
 import { SourceBlockedError, SourceDisabledError } from '../../../src/price-sources/price-source-types.ts'
 import type { ListingObservation, SourceAggregate } from '../../../src/price-sources/price-source-types.ts'
 import { fetchTcgdexCardAggregate } from '../../../src/price-sources/tcgdex/tcgdex-adapter.ts'
@@ -28,7 +27,6 @@ export type PriceSourceGateway = {
   searchEbay(query: string): Promise<ListingObservation[]>
   cardmarketAggregates(): Promise<Map<number, SourceAggregate>>
   tcgdexAggregate(cardId: string): Promise<SourceAggregate | null>
-  pokemontcgAggregate(cardId: string): Promise<SourceAggregate | null>
 }
 
 export type { UnavailableSource }
@@ -69,7 +67,6 @@ export const createPriceSourceGateway = (): PriceSourceGateway => ({
   searchEbay: query => searchEbayListings(query),
   cardmarketAggregates: cardmarketAggregatesOfToday,
   tcgdexAggregate: cardId => fetchTcgdexCardAggregate(cardId),
-  pokemontcgAggregate: cardId => fetchPokemontcgCardAggregate(cardId),
 })
 
 export const loadRefreshRulesContext = async (database: KairosDatabase): Promise<RefreshRulesContext> => {
@@ -121,7 +118,7 @@ export const refreshProductPrices = async (
   const excludedRows = await database.select().from(excludedListings).where(eq(excludedListings.productId, productId))
   const excludedUrls = new Set(excludedRows.map(row => normalizeListingUrl(row.url)))
   const unavailableSources: UnavailableSource[] = []
-  const { cardmarketProductId, tcgdexCardId, pokemontcgCardId } = product
+  const { cardmarketProductId, tcgdexCardId } = product
 
   const ebayDrafts = await collectFromSource(ebaySource, unavailableSources, async () => {
     const listings = await gateway.searchEbay(product.ebayQuery ?? product.name)
@@ -142,13 +139,9 @@ export const refreshProductPrices = async (
     ? []
     : await collectFromSource('tcgdex', unavailableSources, async () =>
         buildCardReferenceSnapshotDrafts([await gateway.tcgdexAggregate(tcgdexCardId)]))
-  const pokemontcgDrafts = pokemontcgCardId === null
-    ? []
-    : await collectFromSource('pokemontcg', unavailableSources, async () =>
-        buildCardReferenceSnapshotDrafts([await gateway.pokemontcgAggregate(pokemontcgCardId)]))
 
   const isEbayUnavailable = unavailableSources.some(unavailableSource => unavailableSource.source === ebaySource)
-  const drafts = [...ebayDrafts, ...cardmarketDrafts, ...tcgdexDrafts, ...pokemontcgDrafts]
+  const drafts = [...ebayDrafts, ...cardmarketDrafts, ...tcgdexDrafts]
   const snapshotIds = await database.transaction(async (transaction) => {
     const insertedIds = await insertPriceSnapshotDrafts(transaction, productId, drafts)
     const ebayRefresh = isEbayUnavailable ? {} : { lastEbayRefreshAt: now }

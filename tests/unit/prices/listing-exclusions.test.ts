@@ -30,7 +30,6 @@ const gatewayWith = (listings: ListingObservation[]): PriceSourceGateway => ({
   searchEbay: async () => listings,
   cardmarketAggregates: async () => new Map(),
   tcgdexAggregate: async () => null,
-  pokemontcgAggregate: async () => null,
 })
 
 const insertProduct = async (database: KairosDatabase) => {

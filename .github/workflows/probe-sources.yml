@@ -19,7 +19,6 @@ jobs:
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
-          POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
           PSA_API_TOKEN: ${{ secrets.PSA_API_TOKEN }}
           PSA_PROBE_CERTIFICATE: ${{ secrets.PSA_PROBE_CERTIFICATE }}
       - uses: actions/upload-artifact@v4

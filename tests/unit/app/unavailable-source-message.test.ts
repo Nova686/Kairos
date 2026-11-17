@@ -31,8 +31,8 @@ describe('describeRefreshOutcome', () => {
   it('lists every unavailable source', () => {
     expect(describeRefreshOutcome([
       { source: 'ebay', kind: 'missing-key', reason: 'EBAY_CLIENT_ID is not set' },
-      { source: 'pokemontcg', kind: 'error', reason: 'error: timeout' },
-    ])).toBe('Prix relevés. eBay indisponible : clé manquante ; Pokémon TCG indisponible : erreur.')
+      { source: 'tcgdex', kind: 'error', reason: 'error: timeout' },
+    ])).toBe('Prix relevés. eBay indisponible : clé manquante ; TCGdex indisponible : erreur.')
   })
 })
 

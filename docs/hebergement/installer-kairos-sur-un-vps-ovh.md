@@ -183,7 +183,6 @@ Ouvrez `deploy/.env` (`nano deploy/.env`) et remplacez chaque valeur :
 | `KAIROS_DOMAIN` | l'adresse choisie à l'étape 4, par exemple `kairos.<votre-domaine>` |
 | `DUCKDNS_SUBDOMAIN`, `DUCKDNS_TOKEN` | vides : ils ne servent qu'avec DuckDNS (annexe A) |
 | `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` | les clés de l'application eBay (programme développeurs eBay, API Browse) ; vides si vous n'en avez pas, et la source eBay sera désactivée |
-| `POKEMONTCG_API_KEY` | clé gratuite sur <https://dev.pokemontcg.io> ; vide, la source est désactivée |
 | `PSA_API_TOKEN` | jeton de l'API PSA (vérification des certificats) ; vide, la source est désactivée |
 | `NUXT_PHOTO_RECOGNITION` | `on` ; `off` si la mémoire manque (étape 1) |
 | `COMPOSE_PROFILES` et `KAIROS_OFFSITE_*` | vides pour l'instant : `COMPOSE_PROFILES` active les services facultatifs (copie hors machine de l'étape 11.2, DuckDNS de l'annexe A) |

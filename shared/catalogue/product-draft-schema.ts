@@ -12,7 +12,6 @@ export const productDraftSchema = z.object({
   imageUrl: optionalText.default(null),
   cardmarketProductId: z.number().int().positive().nullable().default(null),
   tcgdexCardId: optionalText.default(null),
-  pokemontcgCardId: optionalText.default(null),
   ebayQuery: optionalText.default(null),
   ebayExcludedKeywords: z.array(z.string().trim().min(1)).default([]),
 })

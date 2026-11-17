@@ -113,7 +113,6 @@ const priceSourceRows: { source: string, label: string, color: string }[] = [
 
 export const cardReferenceSourceLabels: Record<string, string> = {
   tcgdex: 'TCGdex',
-  pokemontcg: 'Pokémon TCG',
 }
 
 const parisDateFormatter = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' })

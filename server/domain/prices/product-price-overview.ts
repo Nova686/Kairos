@@ -15,7 +15,7 @@ import { loadValuationSnapshots } from '../valuation/load-valuation-snapshots.ts
 const millisecondsPerDay = 24 * 60 * 60 * 1000
 const staleAfterMilliseconds = 7 * millisecondsPerDay
 const historyWindowMilliseconds = 365 * millisecondsPerDay
-const cardReferenceSources = ['tcgdex', 'pokemontcg']
+const cardReferenceSources = ['tcgdex']
 const aggregateKind = 'source-aggregate'
 const manualKind = 'manual'
 const aggregateCondition: ConditionCode = 'sealed-new'

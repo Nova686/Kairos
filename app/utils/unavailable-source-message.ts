@@ -4,7 +4,6 @@ const priceSourceLabels: Record<string, string> = {
   ebay: 'eBay',
   cardmarket: 'Cardmarket',
   tcgdex: 'TCGdex',
-  pokemontcg: 'Pokémon TCG',
 }
 
 const unavailabilityLabels: Record<UnavailabilityKind, string> = {

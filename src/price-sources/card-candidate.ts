@@ -1,5 +1,5 @@
 export interface CardCandidate {
-  source: 'tcgdex' | 'pokemontcg'
+  source: 'tcgdex'
   sourceCardId: string
   name: string
   setName: string | null

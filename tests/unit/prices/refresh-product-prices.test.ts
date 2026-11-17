@@ -46,7 +46,6 @@ const fakeGateway = (overrides: Partial<PriceSourceGateway> = {}): PriceSourceGa
   searchEbay: async () => [],
   cardmarketAggregates: async () => new Map(),
   tcgdexAggregate: async () => null,
-  pokemontcgAggregate: async () => null,
   ...overrides,
 })
 
@@ -183,32 +182,31 @@ describe('refreshProductPrices', () => {
     expect(snapshots[0]!.observedAt).toEqual(new Date('2026-11-01T00:00:00Z'))
   })
 
-  it('writes tcgdex and pokemontcg aggregates and stamps the refresh request', async () => {
+  it('writes the tcgdex aggregate and stamps the refresh request', async () => {
     const database = await createTestDatabase()
-    const { memberId, product } = await insertProduct(database, { tcgdexCardId: 'sv1-1', pokemontcgCardId: 'sv1-1' })
+    const { memberId, product } = await insertProduct(database, { tcgdexCardId: 'sv1-1' })
     await database.insert(priceRefreshRequests).values({ productId: product.id, requestedByUserId: memberId })
     const gateway = fakeGateway({
       tcgdexAggregate: async () => aggregate('tcgdex'),
-      pokemontcgAggregate: async () => aggregate('pokemontcg'),
     })
     await refreshProductPrices(database, gateway, product.id, now)
     const snapshots = await database.select().from(priceSnapshots)
-    expect(snapshots.map(snapshot => snapshot.source).sort()).toEqual(['pokemontcg', 'tcgdex'])
+    expect(snapshots.map(snapshot => snapshot.source)).toEqual(['tcgdex'])
     const [request] = await database.select().from(priceRefreshRequests)
     expect(request!.lastRefreshedAt).toEqual(now)
   })
 
   it('keeps the other sources when one fails with an unexpected error', async () => {
     const database = await createTestDatabase()
-    const { product } = await insertProduct(database, { tcgdexCardId: 'sv1-1', pokemontcgCardId: 'sv1-1' })
+    const { product } = await insertProduct(database, { tcgdexCardId: 'sv1-1', cardmarketProductId: 42 })
     const gateway = fakeGateway({
+      cardmarketAggregates: async () => new Map([[42, aggregate('cardmarket')]]),
       tcgdexAggregate: async () => { throw new Error('HTTP 500') },
-      pokemontcgAggregate: async () => aggregate('pokemontcg'),
     })
     const outcome = await refreshProductPrices(database, gateway, product.id, now)
     expect(outcome.unavailableSources).toEqual([{ source: 'tcgdex', kind: 'error', reason: 'error: HTTP 500' }])
     const snapshots = await database.select().from(priceSnapshots)
-    expect(snapshots.map(snapshot => snapshot.source)).toEqual(['pokemontcg'])
+    expect(snapshots.map(snapshot => snapshot.source)).toEqual(['cardmarket'])
   })
 
   it('reports a source that blocked the request as blocked and keeps the others', async () => {

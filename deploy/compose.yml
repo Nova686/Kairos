@@ -24,7 +24,6 @@ services:
       NUXT_TRUST_PROXY_HEADERS: "true"
       EBAY_CLIENT_ID: ${EBAY_CLIENT_ID:-}
       EBAY_CLIENT_SECRET: ${EBAY_CLIENT_SECRET:-}
-      POKEMONTCG_API_KEY: ${POKEMONTCG_API_KEY:-}
       PSA_API_TOKEN: ${PSA_API_TOKEN:-}
       NUXT_DATABASE_URL: postgres://kairos:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}@database:5432/kairos
     volumes:

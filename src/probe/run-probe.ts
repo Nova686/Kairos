@@ -6,7 +6,6 @@ import { lookupUpcitemdb } from '../identification-sources/upcitemdb.ts'
 import { downloadCardmarketPriceGuide, pokemonGameId } from '../price-sources/cardmarket/cardmarket-files.ts'
 import { parseCardmarketPriceGuide } from '../price-sources/cardmarket/parse-cardmarket-price-guide.ts'
 import { searchEbayListings } from '../price-sources/ebay/ebay-adapter.ts'
-import { fetchPokemontcgCardAggregate, searchPokemontcgCards } from '../price-sources/pokemontcg/pokemontcg-adapter.ts'
 import { SourceDisabledError } from '../price-sources/price-source-types.ts'
 import { readRequiredSetting } from '../source-http/request-source-json.ts'
 import type { SourceId } from '../price-sources/price-source-types.ts'
@@ -42,12 +41,6 @@ await probeSource('cardmarket', `price guide ${probeReferences.cardmarketProduct
 
 await probeSource('tcgdex', probeReferences.tcgdexFrenchName, () => searchTcgdexCards(probeReferences.tcgdexFrenchName))
 await probeSource('tcgdex', probeReferences.tcgdexCardId, async () => presentOnly(await fetchTcgdexCardAggregate(probeReferences.tcgdexCardId)))
-
-await probeSource('pokemontcg', probeReferences.pokemontcgName, async () => {
-  const cardCandidates = await searchPokemontcgCards(probeReferences.pokemontcgName)
-  const firstCandidate = cardCandidates[0]
-  return firstCandidate ? presentOnly(await fetchPokemontcgCardAggregate(firstCandidate.sourceCardId)) : []
-})
 
 await probeSource('upcitemdb', probeReferences.upcitemdbBarcode, async () => presentOnly(await lookupUpcitemdb(probeReferences.upcitemdbBarcode)))
 await probeSource('openbeautyfacts', probeReferences.openBeautyFactsBarcode, async () => presentOnly(await lookupOpenBeautyFacts(probeReferences.openBeautyFactsBarcode)))

@@ -1,4 +1,4 @@
-export type PriceSourceId = 'ebay' | 'cardmarket' | 'tcgdex' | 'pokemontcg' | 'vinted' | 'leboncoin'
+export type PriceSourceId = 'ebay' | 'cardmarket' | 'tcgdex' | 'vinted' | 'leboncoin'
 
 export type SourceId = PriceSourceId | 'psa' | 'openbeautyfacts' | 'upcitemdb'
 

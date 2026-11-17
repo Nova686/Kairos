@@ -12,7 +12,6 @@ export const products = pgTable('products', {
   lastEmbeddingFailureAt: timestamp('last_embedding_failure_at', { withTimezone: true }),
   cardmarketProductId: integer('cardmarket_product_id'),
   tcgdexCardId: text('tcgdex_card_id'),
-  pokemontcgCardId: text('pokemontcg_card_id'),
   ebayQuery: text('ebay_query'),
   ebayExcludedKeywords: text('ebay_excluded_keywords').array().notNull().default([]),
   createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),

@@ -84,10 +84,9 @@ describe('estimateStockItemValue', () => {
     expect(valuation.perSource).toEqual([])
   })
 
-  it('never uses tcgdex or pokemontcg', () => {
+  it('never uses tcgdex', () => {
     const valuation = estimateStockItemValue(sealedProduct('sealed-new'), [
       snapshot({ source: 'tcgdex', kind: 'source-aggregate', kairosCondition: null, figureCents: 100 }),
-      snapshot({ source: 'pokemontcg', kind: 'source-aggregate', kairosCondition: null, figureCents: 100 }),
     ], now)
     expect(valuation.valueCents).toBeNull()
   })

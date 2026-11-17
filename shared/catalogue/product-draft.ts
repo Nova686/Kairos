@@ -9,7 +9,6 @@ export interface ProductDraft {
   imageUrl: string | null
   cardmarketProductId: number | null
   tcgdexCardId: string | null
-  pokemontcgCardId: string | null
   ebayQuery: string | null
   ebayExcludedKeywords: string[]
 }
@@ -23,7 +22,6 @@ export const productDraftFieldNames = [
   'imageUrl',
   'cardmarketProductId',
   'tcgdexCardId',
-  'pokemontcgCardId',
   'ebayQuery',
   'ebayExcludedKeywords',
 ] as const satisfies readonly (keyof ProductDraft)[]
@@ -37,7 +35,6 @@ export const emptyProductDraft = (name: string, category: ProductCategory): Prod
   imageUrl: null,
   cardmarketProductId: null,
   tcgdexCardId: null,
-  pokemontcgCardId: null,
   ebayQuery: null,
   ebayExcludedKeywords: [],
 })

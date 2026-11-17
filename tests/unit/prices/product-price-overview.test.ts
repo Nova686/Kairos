@@ -134,7 +134,7 @@ describe('productPriceOverview', () => {
     expect(toyOverview.bySourceAndCondition).toEqual([])
   })
 
-  it('lists tcgdex and pokemontcg aggregates as card references, apart from the table', async () => {
+  it('lists tcgdex aggregates as card references, apart from the table', async () => {
     const database = await createTestDatabase()
     const product = await insertProduct(database, 'graded-card')
     await insertSnapshot(database, product.id, {
@@ -150,16 +150,19 @@ describe('productPriceOverview', () => {
   })
 
   it('flags a card reference older than 7 days as stale', async () => {
-    const database = await createTestDatabase()
-    const product = await insertProduct(database, 'graded-card')
-    const aggregate = { kind: 'source-aggregate' as const, kairosCondition: null, medianCents: null, averageCents: 500 }
-    await insertSnapshot(database, product.id, { ...aggregate, source: 'tcgdex', observedAt: daysBefore(8) })
-    await insertSnapshot(database, product.id, { ...aggregate, source: 'pokemontcg', observedAt: daysBefore(1) })
+    const aggregate = { kind: 'source-aggregate' as const, source: 'tcgdex', kairosCondition: null, medianCents: null, averageCents: 500 }
+    const staleDatabase = await createTestDatabase()
+    const staleProduct = await insertProduct(staleDatabase, 'graded-card')
+    await insertSnapshot(staleDatabase, staleProduct.id, { ...aggregate, observedAt: daysBefore(8) })
+    const freshDatabase = await createTestDatabase()
+    const freshProduct = await insertProduct(freshDatabase, 'graded-card')
+    await insertSnapshot(freshDatabase, freshProduct.id, { ...aggregate, observedAt: daysBefore(1) })
 
-    const overview = await productPriceOverview(database, product.id, now)
+    const staleOverview = await productPriceOverview(staleDatabase, staleProduct.id, now)
+    const freshOverview = await productPriceOverview(freshDatabase, freshProduct.id, now)
 
-    expect(Object.fromEntries(overview.cardReferences.map(reference => [reference.source, reference.isStale])))
-      .toEqual({ tcgdex: true, pokemontcg: false })
+    expect(staleOverview.cardReferences.map(reference => reference.isStale)).toEqual([true])
+    expect(freshOverview.cardReferences.map(reference => reference.isStale)).toEqual([false])
   })
 
   it('takes the median of manual entries within 7 days for a cell, and one column per grading company and grade', async () => {

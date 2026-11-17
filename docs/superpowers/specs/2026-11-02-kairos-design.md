@@ -19,7 +19,7 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
    - **eBay** : API Browse officielle, place de marché `EBAY_FR`. Elle donne les annonces en cours avec leur état, pour toutes les catégories. C'est la source principale du prix par état. Les ventes conclues ne sont pas accessibles.
    - **Cardmarket** : fichiers publics quotidiens (`price_guide_<jeu>.json`, `products_singles_<jeu>.json`, `products_nonsingles_<jeu>.json`). Ils donnent, par produit, la moyenne, le minimum, la tendance et les moyennes sur 1, 7 et 30 jours, sans ventilation par état. Couvre Pokémon, scellé et cartes, et les autres jeux pour plus tard (One Piece, Lorcana, Magic, Yu-Gi-Oh…).
    - **TCGdex** : API gratuite sans clé. Elle donne les cartes Pokémon sous leur **nom français** avec leur prix Cardmarket.
-   - **pokemontcg.io** : API gratuite, avec une clé gratuite. Elle donne les prix Cardmarket et TCGplayer par carte, en second avis.
+   - **pokemontcg.io** : retirée le 2026-11-17 (API dépréciée, plus de création de compte) ; TCGdex donne les mêmes prix Cardmarket par carte.
    - **Vinted et Leboncoin** : aucune voie officielle. On y passe par une **saisie manuelle** : l'utilisateur note un prix vu, avec l'état, la date et éventuellement le lien de l'annonce. Ce relevé manuel compte comme un relevé de la source.
    - **Aucun relevé par navigateur automatisé** : les quatre sites bloquent ce type d'accès, et le contourner est exclu.
 4. **Historique conservé** de chaque relevé → courbe de valeur par produit et courbe de valeur du stock entier dans le temps.
@@ -29,7 +29,7 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
    - la valeur de l'exemplaire est la **médiane de ces chiffres toutes sources confondues**, en ignorant les relevés de plus de 7 jours ;
    - deux exemplaires du même produit dans des états différents ont donc des valeurs différentes ;
    - *(choix de Claude)* quand aucune annonce récente ne correspond à cet état, on prend l'état le plus proche disponible, et la valeur est affichée comme **approximative**, avec l'état réellement utilisé.
-   - *(choix de Claude)* les chiffres Cardmarket, TCGdex et pokemontcg.io n'ont pas d'état. Ils comptent comme `neuf scellé` pour le scellé, et comme `NM` pour une carte non gradée. Ils sont ignorés pour les autres états et pour les cartes gradées.
+   - *(choix de Claude)* les chiffres Cardmarket et TCGdex n'ont pas d'état. Ils comptent comme `neuf scellé` pour le scellé, et comme `NM` pour une carte non gradée. Ils sont ignorés pour les autres états et pour les cartes gradées.
 6. **Détail par source et par état** : la fiche produit montre, pour chaque source, les prix ventilés **par état** tels que la source les expose. Exemples : sur Vinted, « neuf avec étiquette », « neuf sans étiquette », « très bon état », etc. ; sur eBay, « neuf » ou « occasion » ; sur Leboncoin, l'état de l'annonce ; sur Cardmarket, l'état de la carte (NM, EX…), le scellé n'ayant qu'un état. Les annonces relevées sont donc classées par état.
    - *(choix de Claude)* **Échelle d'états de Kairos**, propre à chaque catégorie. Chaque état de Kairos est mis en correspondance avec le vocabulaire de chaque source. Proposition :
      - **Scellé** (ETB, display, coffret) : `neuf scellé`, `neuf boîte abîmée`, `ouvert complet`, `ouvert incomplet` ;
@@ -66,7 +66,7 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
 - **Gratuit de bout en bout.**
 - **iPhone / Safari** : l'accès caméra exige HTTPS ; Safari n'a pas l'API native `BarcodeDetector`, le décodage doit se faire via une bibliothèque JS.
 - **Uniquement des voies officielles** : les relevés passent par des API et des fichiers publiés pour cet usage, côté serveur. Mesuré le 2026-11-02 : eBay, Vinted, Leboncoin et Cardmarket bloquent un navigateur automatisé, même depuis une IP de particulier. Le contournement est exclu.
-- **Clés à fournir par l'auteur** dans `.env`, jamais versionné : `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `POKEMONTCG_API_KEY`, `PSA_API_TOKEN`. Une source dont la clé manque est désactivée, et l'interface le signale.
+- **Clés à fournir par l'auteur** dans `.env`, jamais versionné : `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `PSA_API_TOKEN`. Une source dont la clé manque est désactivée, et l'interface le signale.
 - Interface en **français**, montants en **euros**. Sources **françaises** uniquement : ebay.fr, vinted.fr, leboncoin.fr, Cardmarket (FR). *(Choix de Claude)*
 - **Volume** : jusqu'à 5 utilisateurs au départ, 150 à 200 exemplaires chacun, soit au plus ~1 000 produits distincts à relever par jour. Un appel eBay par produit et par jour reste dans le quota gratuit. Les fichiers Cardmarket se téléchargent une fois par jour pour tous les produits.
 - **Aucune donnée existante** à importer : pas d'import dans la première version.
@@ -93,7 +93,7 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
 | Détail des prix | Par source **et par état** |
 | Lots, frais | Vente en lot, achat en lot réparti, frais notés, bénéfice net ; port inclus ou non précisé à la vente |
 | Machine à domicile | Aucune ; si Oracle est bloqué, trouver une alternative gratuite |
-| Sources de prix | eBay (API officielle), Cardmarket (fichiers publics), TCGdex, pokemontcg.io ; Vinted et Leboncoin en saisie manuelle |
+| Sources de prix | eBay (API officielle), Cardmarket (fichiers publics), TCGdex ; Vinted et Leboncoin en saisie manuelle |
 | Sources d'identification | PSA (certificat → carte + note), Open Beauty Facts (cosmétiques), UPCitemdb (codes-barres, 100 par jour) ; Brickset écarté |
 
 ## 7. Choix techniques (choix de Claude, modifiables)
@@ -102,8 +102,8 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
 - **Base de données** : PostgreSQL avec l'extension **pgvector** (recherche visuelle). ORM laissé au constructeur (Drizzle suggéré).
 - **Hébergement** : une VM **Oracle Cloud « Always Free »** (Ampere ARM, jusqu'à 4 cœurs / 24 Go) avec Docker Compose : app Nuxt, PostgreSQL, worker de relevés (appels d'API), reverse proxy **Caddy** pour le HTTPS automatique. Nom de domaine gratuit via un sous-domaine DuckDNS (ou équivalent gratuit). L'inscription Oracle demande une carte bancaire non débitée. Le dépôt fournit les scripts d'installation et un guide pas à pas.
 - **Authentification** : email + mot de passe, **sur invitation** uniquement (pas d'inscription ouverte). Sessions par cookie.
-- **Relevés de prix** : un module par source (« adaptateur ») qui renvoie des observations normalisées : source, type, état de la source, prix en centimes, lien. On y trouve eBay (API Browse, jeton OAuth « client credentials », filtre d'état), Cardmarket (téléchargement quotidien des fichiers, rapprochement par `idProduct`), TCGdex, pokemontcg.io, et la saisie manuelle Vinted / Leboncoin. Un worker séparé de l'app gère une file d'attente et respecte les quotas. Relevé quotidien de tous les produits détenus en stock par au moins un utilisateur ; le bouton met le produit en tête de file.
-- **Rapprochement d'un produit avec chaque source** : chaque produit du catalogue garde son identifiant par source quand il existe (`idProduct` Cardmarket, id TCGdex / pokemontcg.io), et une requête de recherche eBay éditable. Le rapprochement est proposé automatiquement à la création du produit, puis confirmé ou corrigé par l'utilisateur.
+- **Relevés de prix** : un module par source (« adaptateur ») qui renvoie des observations normalisées : source, type, état de la source, prix en centimes, lien. On y trouve eBay (API Browse, jeton OAuth « client credentials », filtre d'état), Cardmarket (téléchargement quotidien des fichiers, rapprochement par `idProduct`), TCGdex, et la saisie manuelle Vinted / Leboncoin. Un worker séparé de l'app gère une file d'attente et respecte les quotas. Relevé quotidien de tous les produits détenus en stock par au moins un utilisateur ; le bouton met le produit en tête de file.
+- **Rapprochement d'un produit avec chaque source** : chaque produit du catalogue garde son identifiant par source quand il existe (`idProduct` Cardmarket, id TCGdex), et une requête de recherche eBay éditable. Le rapprochement est proposé automatiquement à la création du produit, puis confirmé ou corrigé par l'utilisateur.
 - **Hébergement de repli** : si la VM ARM d'Oracle est indisponible, faute de capacité, le repli est une VM AMD Always Free d'Oracle, plus petite, avec une reconnaissance photo allégée. Sans navigateur automatisé, l'application tient sur cette petite machine.
 - **Gouvernance du catalogue partagé** *(choix de Claude)* : tout membre peut corriger une fiche produit, une association EAN, une requête de recherche, ou exclure une annonce. La correction vaut pour tous, et chaque modification est journalisée (qui, quand, avant/après), avec un retour arrière possible.
 - **Fiabilité des prix** : chaque produit a, par source, une requête de recherche **éditable** et des mots-clés d'exclusion ; les valeurs aberrantes sont écartées statistiquement (médiane / écart interquartile) ; chaque relevé enregistre les annonces retenues avec leur lien, consultables, pour qu'on voie d'où vient le chiffre et qu'on puisse exclure une annonce.
@@ -124,7 +124,7 @@ L'usage type : **chez soi**, au retour d'achats, on scanne les produits (code-ba
 ## 8. Modèle de données (esquisse)
 
 - **Utilisateur** : compte, invitations.
-- **Produit** *(catalogue partagé entre tous)* : nom, catégorie (Pokémon scellé, carte gradée, jouet, maquillage, autre), type (ETB, display, coffret…), extension/gamme, langue, codes EAN (plusieurs), images, identifiants par source (`idProduct` Cardmarket, id TCGdex, id pokemontcg.io), requête de recherche eBay et mots-clés d'exclusion.
+- **Produit** *(catalogue partagé entre tous)* : nom, catégorie (Pokémon scellé, carte gradée, jouet, maquillage, autre), type (ETB, display, coffret…), extension/gamme, langue, codes EAN (plusieurs), images, identifiants par source (`idProduct` Cardmarket, id TCGdex), requête de recherche eBay et mots-clés d'exclusion.
 - **Exemplaire** *(appartient à un utilisateur)* : produit, état (échelle Kairos de sa catégorie), prix d'achat, date d'achat, lieu, statut (`en livraison` → `en stock` → `vendu – en livraison` → `vendu`), suivi d'achat (numéro ou lien), notes. Pour une carte gradée : société de gradation, note, numéro de certificat.
 - **Lieu** *(par utilisateur)* : libellé.
 - **Correspondance d'états** : pour chaque catégorie et chaque source, l'état de la source ↔ l'état Kairos (table de configuration, modifiable).
