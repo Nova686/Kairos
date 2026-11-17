@@ -51,6 +51,16 @@ ssh-copy-id -i ~/.ssh/kairos-vps.pub <utilisateur>@<ipv4-du-vps>
 
 Puis vérifiez que `ssh -i ~/.ssh/kairos-vps <utilisateur>@<ipv4-du-vps>` entre sans mot de passe.
 
+Une fois connecté par la clé, remplacez le mot de passe du mail par un mot de passe à vous, que `sudo` demandera, puis fermez la connexion par mot de passe :
+
+```bash
+passwd
+printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' | sudo tee /etc/ssh/sshd_config.d/00-kairos.conf
+sudo sshd -t && sudo systemctl restart ssh
+```
+
+Gardez cette session ouverte et vérifiez dans un autre terminal que `ssh -i ~/.ssh/kairos-vps <utilisateur>@<ipv4-du-vps>` entre toujours, et que `ssh -o PubkeyAuthentication=no <utilisateur>@<ipv4-du-vps>` répond `Permission denied (publickey)`.
+
 Mettez le système à jour :
 
 ```bash
