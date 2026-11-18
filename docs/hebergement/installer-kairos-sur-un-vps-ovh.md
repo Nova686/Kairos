@@ -37,24 +37,31 @@ Gardez le fichier `~/.ssh/kairos-vps` (clé privée) pour vous. C'est `~/.ssh/ka
 
 ## 3. Préparer la machine
 
-Connectez-vous avec l'utilisateur du mail de livraison :
+Commencez par une connexion par mot de passe, avec l'utilisateur et le mot de passe du mail de livraison :
 
 ```bash
-ssh -i ~/.ssh/kairos-vps <utilisateur>@<ipv4-du-vps>
+ssh <utilisateur>@<ipv4-du-vps>
 ```
 
-Si vous vous êtes connecté avec le mot de passe du mail, ajoutez d'abord votre clé, depuis votre ordinateur :
+OVHcloud impose de changer ce mot de passe à la première connexion : saisissez celui du mail, puis deux fois un mot de passe à vous, que `sudo` demandera. La connexion se ferme ensuite. Tant que ce changement n'est pas fait, `ssh-copy-id` échoue avec `Password change required but no TTY available`.
+
+Ajoutez ensuite votre clé depuis votre ordinateur, avec ce nouveau mot de passe :
 
 ```bash
 ssh-copy-id -i ~/.ssh/kairos-vps.pub <utilisateur>@<ipv4-du-vps>
 ```
 
-Puis vérifiez que `ssh -i ~/.ssh/kairos-vps <utilisateur>@<ipv4-du-vps>` entre sans mot de passe.
-
-Une fois connecté par la clé, remplacez le mot de passe du mail par un mot de passe à vous, que `sudo` demandera, puis fermez la connexion par mot de passe :
+Puis connectez-vous par la clé, sans mot de passe :
 
 ```bash
-passwd
+ssh -i ~/.ssh/kairos-vps <utilisateur>@<ipv4-du-vps>
+```
+
+Si vous avez donné la clé à la commande, connectez-vous directement ainsi et lancez `passwd` pour choisir le mot de passe que `sudo` demandera.
+
+Une fois connecté par la clé, fermez la connexion par mot de passe :
+
+```bash
 printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' | sudo tee /etc/ssh/sshd_config.d/00-kairos.conf
 sudo sshd -t && sudo systemctl restart ssh
 ```
