@@ -5,3 +5,7 @@ export interface CardCandidate {
   setName: string | null
   imageUrl: string | null
 }
+
+export interface CardSetCard extends CardCandidate {
+  cardNumber: string
+}

@@ -26,6 +26,7 @@ const describeUnavailableSource = (sourceName: string): string =>
 
 export const useProductSearch = () => {
   const searchText = ref('')
+  const cardSetId = ref<string | null>(null)
   const candidates = ref<ProductCandidate[]>([])
   const unavailableSources = ref<string[]>([])
   const isSearching = ref(false)
@@ -50,7 +51,8 @@ export const useProductSearch = () => {
     const searchNumber = latestSearchNumber
     const trimmedText = searchText.value.trim()
     searchErrorMessage.value = ''
-    if (trimmedText === '') {
+    const selectedCardSetId = cardSetId.value
+    if (trimmedText === '' && !selectedCardSetId) {
       candidates.value = []
       unavailableSources.value = []
       isSearching.value = false
@@ -60,7 +62,7 @@ export const useProductSearch = () => {
     try {
       const outcome = await $fetch<{ candidates: ProductCandidate[], unavailableSources: string[] }>(
         '/api/catalogue/search',
-        { query: { q: trimmedText } },
+        { query: selectedCardSetId ? { q: trimmedText, set: selectedCardSetId } : { q: trimmedText } },
       )
       if (searchNumber === latestSearchNumber) {
         candidates.value = outcome.candidates
@@ -79,12 +81,23 @@ export const useProductSearch = () => {
     }
   }
 
-  watch(searchText, () => {
+  const searchFieldLabel = computed(() => (cardSetId.value ? 'Rechercher dans l’extension' : 'Rechercher un produit'))
+
+  watch([searchText, cardSetId], () => {
     clearTimeout(pendingSearch)
     pendingSearch = setTimeout(runSearch, searchDebounceMilliseconds)
   })
 
   onScopeDispose(() => clearTimeout(pendingSearch))
 
-  return { searchText, candidateGroups, unavailableMessages, isSearching, searchErrorMessage, runSearch }
+  return {
+    searchText,
+    cardSetId,
+    searchFieldLabel,
+    candidateGroups,
+    unavailableMessages,
+    isSearching,
+    searchErrorMessage,
+    runSearch,
+  }
 }

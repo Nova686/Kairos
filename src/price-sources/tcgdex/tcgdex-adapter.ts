@@ -1,15 +1,37 @@
 import { requestSourceJson } from '../../source-http/request-source-json.ts'
 import type { FetchFunction } from '../../source-http/request-source-json.ts'
-import type { CardCandidate } from '../card-candidate.ts'
+import type { CardCandidate, CardSetCard } from '../card-candidate.ts'
+import type { CardSetOption } from '../../../shared/catalogue/card-set-option.ts'
 import { euroFigureToCents } from '../price-source-types.ts'
 import type { SourceAggregate } from '../price-source-types.ts'
 
 const tcgdexFrenchCardsEndpoint = 'https://api.tcgdex.net/v2/fr/cards'
+const tcgdexFrenchSetsEndpoint = 'https://api.tcgdex.net/v2/fr/sets'
+const pocketSerieId = 'tcgp'
 
 interface TcgdexCardBrief {
   id: string
   name: string
   image?: string
+}
+
+interface TcgdexSetCardBrief extends TcgdexCardBrief {
+  localId: string
+}
+
+interface TcgdexCardCount {
+  total: number
+  official: number
+}
+
+interface TcgdexSetBrief {
+  id: string
+  name: string
+  cardCount: TcgdexCardCount
+}
+
+interface TcgdexSet extends TcgdexSetBrief {
+  cards: TcgdexSetCardBrief[]
 }
 
 interface TcgdexCardmarketPricing {
@@ -40,6 +62,41 @@ export const searchTcgdexCards = async (frenchName: string, fetchFunction?: Fetc
     name: cardBrief.name,
     setName: null,
     imageUrl: tcgdexImageUrl(cardBrief.image),
+  }))
+}
+
+export const listTcgdexCardSets = async (fetchFunction?: FetchFunction): Promise<CardSetOption[]> => {
+  const listingParameters = new URLSearchParams({
+    'serie.id': `neq:${pocketSerieId}`,
+    'sort:field': 'releaseDate',
+    'sort:order': 'DESC',
+  })
+  const setBriefs = await requestSourceJson<TcgdexSetBrief[]>(
+    'tcgdex',
+    `${tcgdexFrenchSetsEndpoint}?${listingParameters.toString()}`,
+    {},
+    fetchFunction,
+  )
+  return (setBriefs ?? []).map(setBrief => ({ id: setBrief.id, name: setBrief.name, cardCount: setBrief.cardCount.total }))
+}
+
+export const listTcgdexSetCards = async (setId: string, fetchFunction?: FetchFunction): Promise<CardSetCard[]> => {
+  const cardSet = await requestSourceJson<TcgdexSet>(
+    'tcgdex',
+    `${tcgdexFrenchSetsEndpoint}/${encodeURIComponent(setId)}`,
+    {},
+    fetchFunction,
+  )
+  if (!cardSet) {
+    return []
+  }
+  return cardSet.cards.map(setCard => ({
+    source: 'tcgdex',
+    sourceCardId: setCard.id,
+    name: setCard.name,
+    setName: cardSet.name,
+    imageUrl: tcgdexImageUrl(setCard.image),
+    cardNumber: `${setCard.localId}/${cardSet.cardCount.official}`,
   }))
 }
 

@@ -19,6 +19,8 @@ describe('shared catalogue API', async () => {
   it('answers 401 without a session', async () => {
     expect((await fetch('/api/products')).status).toBe(401)
     expect((await fetch('/api/catalogue/search?q=display')).status).toBe(401)
+    expect((await fetch('/api/catalogue/search?set=sv08.5')).status).toBe(401)
+    expect((await fetch('/api/catalogue/card-sets')).status).toBe(401)
   })
 
   it('creates, edits, journals and reverts a product', async () => {

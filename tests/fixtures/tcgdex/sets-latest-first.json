@@ -1,0 +1,36 @@
+[
+  {
+    "id": "me06",
+    "name": "Règne Delta",
+    "cardCount": {
+      "total": 141,
+      "official": 103
+    }
+  },
+  {
+    "id": "30th",
+    "name": "30ᵉ Anniversaire",
+    "cardCount": {
+      "total": 161,
+      "official": 128
+    }
+  },
+  {
+    "id": "30th-c",
+    "name": "Collection Classique 30ᵉ Anniversaire",
+    "cardCount": {
+      "total": 30,
+      "official": 30
+    }
+  },
+  {
+    "id": "me05",
+    "name": "Nuit Noire",
+    "logo": "https://assets.tcgdex.net/fr/me/me05/logo",
+    "symbol": "https://assets.tcgdex.net/univ/me/me05/symbol",
+    "cardCount": {
+      "total": 120,
+      "official": 84
+    }
+  }
+]

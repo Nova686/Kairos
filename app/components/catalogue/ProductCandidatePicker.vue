@@ -34,9 +34,24 @@
         </v-list-item>
       </v-list>
     </div>
+    <v-autocomplete
+      v-model="cardSetId"
+      label="Extension"
+      :items="cardSetOptions"
+      item-title="name"
+      item-value="id"
+      :item-props="describeCardSetOption"
+      :custom-filter="matchesCardSetName"
+      :loading="isLoadingCardSets"
+      :error-messages="cardSetsErrorMessage"
+      :hide-details="!cardSetsErrorMessage"
+      prepend-inner-icon="mdi-cards-outline"
+      no-data-text="Aucune extension"
+      clearable
+    />
     <v-text-field
       v-model="searchText"
-      label="Rechercher un produit"
+      :label="searchFieldLabel"
       :autofocus="focusSearch"
       prepend-inner-icon="mdi-magnify"
       :loading="isSearching"
@@ -153,7 +168,9 @@ const describeCandidate = (candidate: ProductCandidate): string =>
 
 const categoryOptions = productCategories.map(category => ({ value: category, title: productCategoryLabels[category] }))
 
-const { searchText, candidateGroups, unavailableMessages, isSearching, searchErrorMessage } = useProductSearch()
+const { searchText, cardSetId, searchFieldLabel, candidateGroups, unavailableMessages, isSearching, searchErrorMessage }
+  = useProductSearch()
+const { cardSetOptions, isLoadingCardSets, cardSetsErrorMessage } = useCardSetOptions()
 const { errorMessage, isCreating, newProductName, newProductCategory, pickCandidate, createBlankProduct } = useProductPicking(
   product => emit('picked', product),
 )

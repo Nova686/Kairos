@@ -35,7 +35,7 @@ const defaultDependencies: ProductSearchDependencies = {
   searchEbayListings: query => searchEbayListings(query),
 }
 
-const splitIntoSearchableWords = (query: string): string[] =>
+export const splitIntoSearchableWords = (query: string): string[] =>
   foldAccentsAndCase(query).split(/\s+/).filter(queryWord => queryWord.length > 0)
 
 const toDraft = (product: Product): ProductDraft => ({
@@ -59,7 +59,20 @@ export const toCatalogueCandidate = (product: Product): ProductCandidate => ({
   draft: toDraft(product),
 })
 
-const settleSource = async <TOutcome>(
+export const toTcgdexCandidate = (tcgdexCard: CardCandidate, label: string): ProductCandidate => ({
+  origin: 'tcgdex',
+  label,
+  imageUrl: tcgdexCard.imageUrl,
+  productId: null,
+  draft: {
+    ...emptyProductDraft(tcgdexCard.name, 'graded-card'),
+    seriesName: tcgdexCard.setName,
+    imageUrl: tcgdexCard.imageUrl,
+    tcgdexCardId: tcgdexCard.sourceCardId,
+  },
+})
+
+export const settleSource = async <TOutcome>(
   sourceName: string,
   search: () => Promise<TOutcome[]>,
   unavailableSources: string[],
@@ -136,18 +149,7 @@ export const searchProductCandidates = async (
   const tcgdexCandidates: ProductCandidate[] = tcgdexCards
     .filter(tcgdexCard => !knownTcgdexIds.has(tcgdexCard.sourceCardId))
     .slice(0, maximumCandidatesPerOrigin)
-    .map(tcgdexCard => ({
-      origin: 'tcgdex',
-      label: tcgdexCard.setName ? `${tcgdexCard.name} (${tcgdexCard.setName})` : tcgdexCard.name,
-      imageUrl: tcgdexCard.imageUrl,
-      productId: null,
-      draft: {
-        ...emptyProductDraft(tcgdexCard.name, 'graded-card'),
-        seriesName: tcgdexCard.setName,
-        imageUrl: tcgdexCard.imageUrl,
-        tcgdexCardId: tcgdexCard.sourceCardId,
-      },
-    }))
+    .map(tcgdexCard => toTcgdexCandidate(tcgdexCard, tcgdexCard.setName ? `${tcgdexCard.name} (${tcgdexCard.setName})` : tcgdexCard.name))
 
   const distinctEbayListings = ebayListings.filter(
     (listing, position, allListings) => allListings.findIndex(otherListing => otherListing.title === listing.title) === position,
