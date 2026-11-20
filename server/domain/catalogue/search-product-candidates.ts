@@ -29,6 +29,7 @@ export interface ProductSearchOutcome {
 }
 
 const maximumCandidatesPerOrigin = 10
+const minimumEbayQueryLength = 3
 
 const defaultDependencies: ProductSearchDependencies = {
   searchTcgdexCards: frenchName => searchTcgdexCards(frenchName),
@@ -102,7 +103,9 @@ export const searchProductCandidates = async (
   const unavailableSources: string[] = []
   const [tcgdexCards, ebayListings, allCardmarketProducts] = await Promise.all([
     settleSource('tcgdex', () => dependencies.searchTcgdexCards(trimmedQuery), unavailableSources),
-    settleSource('ebay', () => dependencies.searchEbayListings(trimmedQuery), unavailableSources),
+    trimmedQuery.length >= minimumEbayQueryLength
+      ? settleSource('ebay', () => dependencies.searchEbayListings(trimmedQuery), unavailableSources)
+      : Promise.resolve([]),
     database.select().from(cardmarketProducts),
   ])
   unavailableSources.sort()

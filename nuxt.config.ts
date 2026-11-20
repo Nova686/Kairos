@@ -26,6 +26,8 @@ export default defineNuxtConfig({
     tesseractDirectory: '.data/tesseract',
     photoRecognition: 'on',
     trustProxyHeaders: false,
+    ebayVerificationToken: '',
+    ebayAccountDeletionEndpoint: '',
   },
   hooks: {
     'nitro:config': (nitroConfig) => {

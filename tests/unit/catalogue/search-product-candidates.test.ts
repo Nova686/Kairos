@@ -173,6 +173,23 @@ describe('searchProductCandidates', () => {
     await expect(searchProductCandidates(database, 'lego', dependencies)).rejects.toThrow('boom')
   })
 
+  it('leaves eBay out of a query shorter than three characters', async () => {
+    const database = await createTestDatabase()
+    const userId = await insertUser(database)
+    await createProduct(database, userId, emptyProductDraft('ETB Évolutions', 'pokemon-sealed'))
+    const dependencies: ProductSearchDependencies = {
+      ...noSources,
+      searchEbayListings: async () => {
+        throw new Error('must not be called')
+      },
+    }
+
+    const { candidates, unavailableSources } = await searchProductCandidates(database, ' et ', dependencies)
+
+    expect(candidates.map(candidate => candidate.label)).toEqual(['ETB Évolutions'])
+    expect(unavailableSources).toEqual([])
+  })
+
   it('returns nothing for a blank query without calling sources', async () => {
     const database = await createTestDatabase()
     const dependencies: ProductSearchDependencies = {

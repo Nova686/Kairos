@@ -189,10 +189,19 @@ Ouvrez `deploy/.env` (`nano deploy/.env`) et remplacez chaque valeur :
 | `POSTGRES_PASSWORD` | la sortie de `openssl rand -hex 24` ; en hexadécimal il n'a aucun caractère spécial, et il est inséré tel quel dans l'adresse de la base |
 | `KAIROS_DOMAIN` | l'adresse choisie à l'étape 4, par exemple `kairos.<votre-domaine>` |
 | `DUCKDNS_SUBDOMAIN`, `DUCKDNS_TOKEN` | vides : ils ne servent qu'avec DuckDNS (annexe A) |
-| `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` | les clés de l'application eBay (programme développeurs eBay, API Browse) ; vides si vous n'en avez pas, et la source eBay sera désactivée |
+| `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` | les clés **Production** de l'application eBay (programme développeurs eBay, API Browse) : « App ID » et « Cert ID » ; vides si vous n'en avez pas, et la source eBay sera désactivée |
+| `EBAY_VERIFICATION_TOKEN` | avec eBay seulement : une nouvelle sortie de `openssl rand -hex 32`, le jeton des notifications de suppression de compte (voir ci-dessous) ; vide sans eBay |
 | `PSA_API_TOKEN` | jeton de l'API PSA (vérification des certificats) ; vide, la source est désactivée |
 | `NUXT_PHOTO_RECOGNITION` | `on` ; `off` si la mémoire manque (étape 1) |
 | `COMPOSE_PROFILES` et `KAIROS_OFFSITE_*` | vides pour l'instant : `COMPOSE_PROFILES` active les services facultatifs (copie hors machine de l'étape 11.2, DuckDNS de l'annexe A) |
+
+**Avec eBay**, le portail développeurs désactive les clés tant que l'application n'est pas abonnée aux notifications de suppression de compte (« Marketplace Account Deletion »). Kairos y répond tout seul ; une fois Kairos démarré (étape 7), ouvrez dans le portail eBay *Application Keys*, puis le lien *Notifications* à côté de l'App ID de production, choisissez *Marketplace Account Deletion* et saisissez :
+
+- une adresse mail de contact ;
+- l'adresse de notification `https://<KAIROS_DOMAIN>/api/ebay/account-deletion` ;
+- le jeton de vérification, la valeur exacte de `EBAY_VERIFICATION_TOKEN`.
+
+Enregistrez (*Save*) : eBay vérifie l'adresse aussitôt, puis *Send Test Notification* doit réussir. Les clés sont réactivées dans la foulée. Kairos ne garde aucune donnée de compte eBay : il accuse réception de chaque notification sans rien avoir à effacer.
 
 Le fichier `deploy/.env` n'est jamais versionné. Gardez-en **une seule copie**, dans votre gestionnaire de mots de passe, et nulle part ailleurs (ni mail, ni dépôt, ni capture). Sans le `POSTGRES_PASSWORD` exact, une base existante ne se rouvre pas.
 

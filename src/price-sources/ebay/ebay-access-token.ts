@@ -6,15 +6,14 @@ const ebayPublicScope = 'https://api.ebay.com/oauth/api_scope'
 const tokenRenewalMarginMs = 60000
 
 let cachedAccessToken: { value: string; expiresAt: number } | null = null
+let pendingAccessToken: Promise<string> | null = null
 
 export const forgetEbayAccessToken = (): void => {
   cachedAccessToken = null
+  pendingAccessToken = null
 }
 
-export const fetchEbayAccessToken = async (fetchFunction?: FetchFunction): Promise<string> => {
-  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now()) {
-    return cachedAccessToken.value
-  }
+const requestEbayAccessToken = async (fetchFunction?: FetchFunction): Promise<string> => {
   const clientId = readRequiredSetting('ebay', 'EBAY_CLIENT_ID')
   const clientSecret = readRequiredSetting('ebay', 'EBAY_CLIENT_SECRET')
   const tokenAnswer = await requestSourceJson<{ access_token: string; expires_in: number }>(
@@ -38,4 +37,21 @@ export const fetchEbayAccessToken = async (fetchFunction?: FetchFunction): Promi
     expiresAt: Date.now() + tokenAnswer.expires_in * 1000 - tokenRenewalMarginMs,
   }
   return cachedAccessToken.value
+}
+
+export const fetchEbayAccessToken = (fetchFunction?: FetchFunction): Promise<string> => {
+  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now()) {
+    return Promise.resolve(cachedAccessToken.value)
+  }
+  if (!pendingAccessToken) {
+    const tokenRequest = requestEbayAccessToken(fetchFunction)
+    pendingAccessToken = tokenRequest
+    const releaseTokenRequest = () => {
+      if (pendingAccessToken === tokenRequest) {
+        pendingAccessToken = null
+      }
+    }
+    tokenRequest.then(releaseTokenRequest, releaseTokenRequest)
+  }
+  return pendingAccessToken
 }

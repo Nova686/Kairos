@@ -17,7 +17,7 @@ const originTitles: Record<ProductCandidate['origin'], string> = {
 }
 
 const unavailableSourceMessages: Record<string, string> = {
-  ebay: 'eBay indisponible : clés manquantes',
+  ebay: 'eBay indisponible : clés manquantes ou limite d’appels atteinte',
   tcgdex: 'TCGdex indisponible',
 }
 

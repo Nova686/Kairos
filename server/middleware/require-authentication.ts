@@ -3,6 +3,7 @@ const publicInvitationLookupPattern = /^\/api\/invitations\/[^/]+$/
 const publicInvitationAcceptancePattern = /^\/api\/invitations\/[^/]+\/accept$/
 const libraryOwnSessionPattern = /^\/api\/_auth\/session$/
 const publicHealthPattern = /^\/api\/health$/
+const ebayAccountDeletionPattern = /^\/api\/ebay\/account-deletion$/
 
 export default defineEventHandler(async (event) => {
   const { pathname } = getRequestURL(event)
@@ -14,7 +15,8 @@ export default defineEventHandler(async (event) => {
   const isPublicInvitationAcceptance = event.method === 'POST' && publicInvitationAcceptancePattern.test(pathname)
   const isLibraryOwnSessionAccess = ['GET', 'DELETE'].includes(event.method) && libraryOwnSessionPattern.test(pathname)
   const isPublicHealth = event.method === 'GET' && publicHealthPattern.test(pathname)
-  if (isPublicHealth || isPublicLogin || isPublicInvitationLookup || isPublicInvitationAcceptance || isLibraryOwnSessionAccess) {
+  const isEbayAccountDeletionNotice = ['GET', 'POST'].includes(event.method) && ebayAccountDeletionPattern.test(pathname)
+  if (isEbayAccountDeletionNotice || isPublicHealth || isPublicLogin || isPublicInvitationLookup || isPublicInvitationAcceptance || isLibraryOwnSessionAccess) {
     return
   }
   await requireSessionUser(event)

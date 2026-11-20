@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { buildEbaySearchUrl } from '../../../src/price-sources/ebay/ebay-adapter.ts'
+import { buildEbaySearchUrl, forgetEbayCallHistory, searchEbayListings } from '../../../src/price-sources/ebay/ebay-adapter.ts'
 import { fetchEbayAccessToken, forgetEbayAccessToken } from '../../../src/price-sources/ebay/ebay-access-token.ts'
 import { parseEbayItemSummaries } from '../../../src/price-sources/ebay/parse-ebay-item-summaries.ts'
-import { SourceDisabledError } from '../../../src/price-sources/price-source-types.ts'
+import { SourceBlockedError, SourceDisabledError } from '../../../src/price-sources/price-source-types.ts'
 
 const ebaySearchFixture: unknown = JSON.parse(
   readFileSync(new URL('../../fixtures/ebay/item-summary-search.json', import.meta.url), 'utf8'),
@@ -85,5 +85,46 @@ describe('fetchEbayAccessToken', () => {
   it('disables eBay without keys', async () => {
     delete process.env.EBAY_CLIENT_ID
     await expect(fetchEbayAccessToken()).rejects.toBeInstanceOf(SourceDisabledError)
+  })
+})
+
+describe('searchEbayListings', () => {
+  beforeEach(() => {
+    forgetEbayAccessToken()
+    forgetEbayCallHistory()
+    process.env.EBAY_CLIENT_ID = 'client-id'
+    process.env.EBAY_CLIENT_SECRET = 'client-secret'
+  })
+
+  const recordingFetch = (searchStatus: number) => {
+    const requestedUrls: string[] = []
+    const fakeFetch = async (url: string | URL | Request): Promise<Response> => {
+      requestedUrls.push(String(url))
+      if (String(url).endsWith('/oauth2/token')) {
+        return new Response(JSON.stringify({ access_token: 'token-1', expires_in: 7200 }), { status: 200 })
+      }
+      return new Response(JSON.stringify(ebaySearchFixture), { status: searchStatus })
+    }
+    return { fakeFetch, requestedUrls }
+  }
+
+  it('asks eBay once for the same search typed twice, whatever its case', async () => {
+    const { fakeFetch, requestedUrls } = recordingFetch(200)
+
+    const firstListings = await searchEbayListings('Display Écarlate', [], fakeFetch)
+    const secondListings = await searchEbayListings('display écarlate ', [], fakeFetch)
+
+    expect(secondListings).toEqual(firstListings)
+    expect(requestedUrls.filter(requestedUrl => requestedUrl.includes('/item_summary/search'))).toHaveLength(1)
+    expect(requestedUrls.filter(requestedUrl => requestedUrl.endsWith('/oauth2/token'))).toHaveLength(1)
+  })
+
+  it('stops asking eBay after it refuses a search', async () => {
+    const { fakeFetch, requestedUrls } = recordingFetch(429)
+
+    await expect(searchEbayListings('ETB', [], fakeFetch)).rejects.toBeInstanceOf(SourceBlockedError)
+    await expect(searchEbayListings('Display', [], fakeFetch)).rejects.toBeInstanceOf(SourceBlockedError)
+
+    expect(requestedUrls.filter(requestedUrl => requestedUrl.includes('/item_summary/search'))).toHaveLength(1)
   })
 })
