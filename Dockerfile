@@ -1,4 +1,5 @@
 FROM node:22-bookworm-slim AS build
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts && npm rebuild
