@@ -1,0 +1,50 @@
+{
+  "cardCount": {
+    "firstEd": 0,
+    "holo": 127,
+    "normal": 81,
+    "official": 131,
+    "reverse": 268,
+    "total": 180
+  },
+  "cards": [
+    {
+      "id": "sv08.5-001",
+      "image": "https://assets.tcgdex.net/fr/sv/sv08.5/001",
+      "localId": "001",
+      "name": "Noeunoeuf"
+    },
+    {
+      "id": "sv08.5-002",
+      "image": "https://assets.tcgdex.net/fr/sv/sv08.5/002",
+      "localId": "002",
+      "name": "Noadkoko"
+    },
+    {
+      "id": "sv08.5-014",
+      "image": "https://assets.tcgdex.net/fr/sv/sv08.5/014",
+      "localId": "014",
+      "name": "Pyroli-ex"
+    },
+    {
+      "id": "sv08.5-146",
+      "localId": "146",
+      "name": "Pyroli-ex"
+    }
+  ],
+  "id": "sv08.5",
+  "legal": {
+    "expanded": true,
+    "standard": false
+  },
+  "logo": "https://assets.tcgdex.net/fr/sv/sv08.5/logo",
+  "name": "Évolutions Prismatiques",
+  "releaseDate": "2025-01-17",
+  "serie": {
+    "id": "sv",
+    "name": "Écarlate et Violet"
+  },
+  "abbreviation": {
+    "official": "PRE"
+  }
+}
