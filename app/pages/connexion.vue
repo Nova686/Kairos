@@ -38,6 +38,12 @@
         </v-btn>
       </v-form>
     </div>
+    <NuxtLink
+      to="/confidentialite"
+      class="kairos-auth__secondary-link"
+    >
+      Politique de confidentialité
+    </NuxtLink>
   </v-card>
 </template>
 

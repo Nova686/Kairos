@@ -15,6 +15,10 @@ if grep -qx "offsite-restore" <<<"$offsite_services$default_services"; then
   echo "the offsite restore service must only run on demand" >&2
   exit 1
 fi
+if grep -qx "google-drive-authorize" <<<"$offsite_services$default_services"; then
+  echo "the Google Drive authorization must only run on demand" >&2
+  exit 1
+fi
 
 export COMPOSE_PROFILES=offsite
 export KAIROS_OFFSITE_ENDPOINT=http://fake-object-storage:8080

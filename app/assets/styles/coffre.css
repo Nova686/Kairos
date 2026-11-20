@@ -251,6 +251,14 @@ h1,
   padding: 20px;
 }
 
+.kairos-auth__secondary-link {
+  display: block;
+  margin-top: 16px;
+  color: var(--kairos-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
 @media (max-width: 959.98px) {
   .kairos-desktop-only {
     display: none !important;
