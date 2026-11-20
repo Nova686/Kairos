@@ -20,4 +20,5 @@ export default defineEventHandler(async (event) => {
     return
   }
   await requireSessionUser(event)
+  await renewUserSessionWhenDue(event)
 })

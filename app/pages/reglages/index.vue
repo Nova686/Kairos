@@ -28,7 +28,7 @@
         <v-text-field
           v-if="invitationLink"
           :model-value="invitationLink"
-          label="Lien d'invitation (valable 7 jours)"
+          label="Lien d'invitation (valable 30 jours)"
           readonly
           class="mt-4"
         >

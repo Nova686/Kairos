@@ -24,7 +24,7 @@ export type NewAccount = {
 export const minimumPasswordLength = 10
 const invitationCodeByteCount = 18
 const dummyPasswordByteCount = 18
-const invitationValidityInMilliseconds = 7 * 24 * 60 * 60 * 1000
+const invitationValidityInMilliseconds = 30 * 24 * 60 * 60 * 1000
 
 export class InvitationUnavailableError extends Error {
   constructor() {

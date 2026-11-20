@@ -96,15 +96,15 @@ describe('accounts service', () => {
     expect(await isAdministrator(database, '00000000-0000-4000-8000-000000000000')).toBe(false)
   })
 
-  it('creates an invitation valid for 7 days with a 24 character URL-safe code', async () => {
+  it('creates an invitation valid for 30 days with a 24 character URL-safe code', async () => {
     const database = await createTestDatabase()
     const admin = await createAdmin(database)
 
     const { code, expiresAt } = await createInvitation(database, admin.id)
 
     expect(code).toMatch(/^[A-Za-z0-9_-]{24}$/)
-    const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000
-    expect(Math.abs(expiresAt.getTime() - Date.now() - sevenDaysInMilliseconds)).toBeLessThan(60_000)
+    const thirtyDaysInMilliseconds = 30 * 24 * 60 * 60 * 1000
+    expect(Math.abs(expiresAt.getTime() - Date.now() - thirtyDaysInMilliseconds)).toBeLessThan(60_000)
   })
 
   it('accepts a fresh invitation once and marks it used', async () => {

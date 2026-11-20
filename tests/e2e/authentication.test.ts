@@ -7,6 +7,10 @@ const lockedMemberEmail = 'locked@example.com'
 const lockedMemberPassword = 'locked-member-password'
 const timedMemberEmail = 'timed@example.com'
 const timedMemberPassword = 'timed-member-password'
+const browserCookieLifetimeLimitSeconds = 400 * 24 * 60 * 60
+
+const readSessionCookieMaxAgeSeconds = (response: Response): number =>
+  Number(/;\s*Max-Age=(\d+)/i.exec(response.headers.getSetCookie()[0] ?? '')?.[1])
 
 const attemptLogin = (email: string, password: string, clientAddress: string) =>
   fetch('/api/auth/login', {
@@ -127,15 +131,30 @@ describe('authentication', async () => {
     expect(currentUser).toMatchObject({ email: administratorEmail, isAdmin: true })
   })
 
-  it('keeps the session cookie for thirty days, so a home screen app stays signed in once closed', async () => {
+  it('keeps the session cookie for the 400 days browsers allow, so a home screen app stays signed in once closed', async () => {
     const loginResponse = await fetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email: administratorEmail, password: administratorPassword }),
       headers: { 'content-type': 'application/json' },
     })
-    const sessionCookieMaxAgeSeconds = Number(/;\s*Max-Age=(\d+)/i.exec(loginResponse.headers.getSetCookie()[0] ?? '')?.[1])
 
-    expect(sessionCookieMaxAgeSeconds).toBe(30 * 24 * 60 * 60)
+    expect(readSessionCookieMaxAgeSeconds(loginResponse)).toBe(browserCookieLifetimeLimitSeconds)
+  })
+
+  it('renews the session cookie on use at most once a day, so an account in use never has to sign in again', async () => {
+    const loginResponse = await fetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: administratorEmail, password: administratorPassword }),
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const firstUseResponse = await fetch('/api/auth/me', { headers: { cookie: extractSessionCookie(loginResponse) } })
+    const sameDayUseResponse = await fetch('/api/auth/me', { headers: { cookie: extractSessionCookie(firstUseResponse) } })
+
+    expect(firstUseResponse.status).toBe(200)
+    expect(readSessionCookieMaxAgeSeconds(firstUseResponse)).toBe(browserCookieLifetimeLimitSeconds)
+    expect(sameDayUseResponse.status).toBe(200)
+    expect(sameDayUseResponse.headers.getSetCookie()).toEqual([])
   })
 
   it('answers 401 on the current user after signing out through the library session route', async () => {

@@ -5,6 +5,10 @@ declare module '#auth-utils' {
     displayName: string
     isAdmin: boolean
   }
+
+  interface SecureSessionData {
+    sessionRenewedAt?: number
+  }
 }
 
 export {}
