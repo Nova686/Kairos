@@ -2,7 +2,7 @@
 
 Ce guide va pas à pas d'un VPS OVHcloud tout juste commandé jusqu'à un site Kairos en ligne en HTTPS, utilisable depuis l'iPhone, sur un nom de domaine acheté chez OVHcloud. Comptez une à deux heures la première fois.
 
-À la fin, une seule machine fait tourner l'application, PostgreSQL, Caddy (HTTPS automatique) et une sauvegarde quotidienne sur le disque de la machine. Le tout tourne sous Docker Compose (`deploy/compose.yml`). En option, une copie quotidienne de ces sauvegardes part hors de la machine, vers un stockage compatible S3 (étape 11.2). Une mise à jour DuckDNS est aussi possible si vous n'avez pas de domaine à vous (annexe A).
+À la fin, une seule machine fait tourner l'application, PostgreSQL, Caddy (HTTPS automatique) et une sauvegarde quotidienne sur le disque de la machine. Le tout tourne sous Docker Compose (`deploy/compose.yml`). En option, une copie quotidienne de ces sauvegardes part hors de la machine, vers votre Google Drive ou un stockage compatible S3 (étape 11.2). Une mise à jour DuckDNS est aussi possible si vous n'avez pas de domaine à vous (annexe A).
 
 Les valeurs entre chevrons (`<...>`) sont à remplacer par les vôtres. Ne collez jamais de vrais secrets dans un message, une capture ou un dépôt.
 
@@ -193,7 +193,7 @@ Ouvrez `deploy/.env` (`nano deploy/.env`) et remplacez chaque valeur :
 | `EBAY_VERIFICATION_TOKEN` | avec eBay seulement : une nouvelle sortie de `openssl rand -hex 32`, le jeton des notifications de suppression de compte (voir ci-dessous) ; vide sans eBay |
 | `PSA_API_TOKEN` | jeton de l'API PSA (vérification des certificats) ; vide, la source est désactivée |
 | `NUXT_PHOTO_RECOGNITION` | `on` ; `off` si la mémoire manque (étape 1) |
-| `COMPOSE_PROFILES` et `KAIROS_OFFSITE_*` | vides pour l'instant : `COMPOSE_PROFILES` active les services facultatifs (copie hors machine de l'étape 11.2, DuckDNS de l'annexe A) |
+| `COMPOSE_PROFILES`, `KAIROS_DRIVE_*` et `KAIROS_OFFSITE_*` | vides pour l'instant : `COMPOSE_PROFILES` active les services facultatifs (copie hors machine de l'étape 11.2, DuckDNS de l'annexe A) |
 
 **Avec eBay**, le portail développeurs désactive les clés tant que l'application n'est pas abonnée aux notifications de suppression de compte (« Marketplace Account Deletion »). Kairos y répond tout seul ; une fois Kairos démarré (étape 7), ouvrez dans le portail eBay *Application Keys*, puis le lien *Notifications* à côté de l'App ID de production, choisissez *Marketplace Account Deletion* et saisissez :
 
@@ -320,7 +320,7 @@ La clé ne peut alors plus lancer que le script de mise à jour. Gardez votre cl
 
 Le conteneur `backup` fait un `pg_dump` de la base chaque jour à **03:30 UTC** (04:30 ou 05:30 à Paris selon la saison). Il garde les **14 derniers** fichiers `kairos-AAAA-MM-JJ.dump` dans le volume Docker `kairos-backups`.
 
-**Ces sauvegardes locales sont sur le même disque que la base.** Si le disque ou le VPS disparaît, elles disparaissent avec la base. Deux parades, cumulables : la copie automatique vers un stockage compatible S3 (11.2, désactivée par défaut) et la copie à la main sur votre ordinateur (11.3).
+**Ces sauvegardes locales sont sur le même disque que la base.** Si le disque ou le VPS disparaît, elles disparaissent avec la base. Deux parades, cumulables : la copie automatique vers votre Google Drive ou un stockage compatible S3 (11.2, désactivée par défaut) et la copie à la main sur votre ordinateur (11.3).
 
 ### 11.1 Voir les sauvegardes
 
@@ -331,14 +331,60 @@ docker compose -f deploy/compose.yml exec -T backup ls -l /backups
 
 ### 11.2 Copie automatique hors de la machine (facultative)
 
-Chaque jour à **04:00 UTC**, une demi-heure après la sauvegarde, le conteneur `offsite-backup` (image `rclone/rclone`) copie les fichiers `kairos-*.dump` du volume vers un compartiment (« bucket ») d'un stockage objet **compatible S3**, chez le fournisseur de votre choix. L'Object Storage S3 du Public Cloud d'OVHcloud en est un. Tout autre fournisseur compatible S3 convient de la même façon : seuls le point d'accès, la région et la clé changent.
+Chaque jour à **04:00 UTC**, une demi-heure après la sauvegarde, le conteneur `offsite-backup` (image `rclone/rclone`) copie les fichiers `kairos-*.dump` du volume hors de la machine : dans **votre Google Drive** (gratuit, conseillé, 11.2.1) ou dans un compartiment (« bucket ») d'un stockage objet **compatible S3** (11.2.2). Si les deux sont renseignés, Google Drive l'emporte.
 
 Comment il garde les copies :
-- il garde dans le compartiment les **14 copies les plus récentes**, quel que soit leur âge ;
+- il garde à destination les **14 copies les plus récentes**, quel que soit leur âge ;
 - il ne supprime rien tant que la machine n'a pas de sauvegarde de moins de 2 jours. Une machine perdue, un volume vidé ou des sauvegardes qui échouent plusieurs nuits de suite n'effacent donc pas les copies ;
 - il ne lit le volume des sauvegardes qu'en lecture seule.
 
-Le stockage est facturé par votre fournisseur selon le volume conservé. Kairos envoie un fichier de quelques Mo par jour et en garde 14. Le compartiment protège contre la perte du disque ou du VPS, mais pas contre la perte du compte chez ce fournisseur. Gardez donc aussi, de temps en temps, une copie chez vous (11.3).
+Kairos envoie un fichier de quelques Mo par jour et en garde 14. La copie protège contre la perte du disque ou du VPS, mais pas contre la perte du compte Google ou du compte chez le fournisseur S3. Gardez donc aussi, de temps en temps, une copie chez vous (11.3).
+
+En cas d'échec, le conteneur réessaie à la copie suivante, le lendemain à 04:00 UTC.
+
+#### 11.2.1 Vers Google Drive
+
+Kairos n'accède qu'aux fichiers qu'il crée lui-même dans votre Drive : il ne voit ni ne modifie le reste. Les copies arrivent dans le dossier **Sauvegardes Kairos**, visible sur <https://drive.google.com>. Les 14 copies tiennent largement dans les 15 Go gratuits.
+
+**1. Créer le client Google** (une fois, depuis un ordinateur). Sur <https://console.cloud.google.com>, connecté avec le compte Google qui recevra les sauvegardes :
+1. Créez un projet, par exemple `Kairos` (sélecteur de projet en haut de la page, puis « Nouveau projet »). Un projet à part évite de modifier celui d'une autre application.
+2. Menu « API et services », puis « Bibliothèque » : cherchez **Google Drive API** et cliquez sur « Activer ».
+3. Menu « Google Auth Platform » (ou « Écran de consentement OAuth »), puis « Commencer » : nom de l'application `Kairos`, votre adresse comme adresse d'assistance et de contact, audience **Externe**.
+4. Page « Audience » : cliquez sur **« Publier l'application »** pour la passer « En production ». Une application restée « En test » perd son accès au bout de 7 jours. L'accès que demande Kairos (ses propres fichiers seulement) ne demande aucune validation de Google.
+5. Page « Clients », puis « Créer un client » : type **« TV et appareils à entrée limitée »**, nom `Kairos VPS`, puis « Créer ». Copiez l'**ID client** et le **code secret du client**, et rangez-les dans votre gestionnaire de mots de passe.
+
+**2. Renseigner `deploy/.env`** (`nano deploy/.env`) :
+
+| Variable | Valeur |
+|---|---|
+| `COMPOSE_PROFILES` | `offsite` ; avec DuckDNS, `offsite,duckdns` |
+| `KAIROS_DRIVE_CLIENT_ID` | l'ID client |
+| `KAIROS_DRIVE_CLIENT_SECRET` | le code secret du client |
+| `KAIROS_DRIVE_FOLDER` | facultatif : un autre nom de dossier que `Sauvegardes Kairos` |
+
+**3. Autoriser Kairos sur votre Drive** (une fois) :
+
+```bash
+cd ~/kairos
+docker compose -f deploy/compose.yml run --rm google-drive-authorize
+```
+
+La commande affiche une adresse, <https://www.google.com/device>, et un code. Ouvrez l'adresse sur votre téléphone ou votre ordinateur, saisissez le code, choisissez le compte Google qui recevra les sauvegardes et acceptez. Si Google affiche un avertissement, cliquez sur « Paramètres avancés », puis sur « Accéder à Kairos ». La commande se termine par `Accès accordé`. L'accès est rangé sur le VPS, dans le volume Docker `kairos-google-drive`, pas dans `deploy/.env`.
+
+**4. Démarrer la copie.** Le conteneur fait sa première copie dès son démarrage ; vérifiez-la :
+
+```bash
+docker compose -f deploy/compose.yml up -d
+docker compose -f deploy/compose.yml logs offsite-backup
+```
+
+La dernière ligne doit être `offsite copy done: offsite:Sauvegardes Kairos`, et le dossier apparaît dans votre Drive.
+- `accès pas encore accordé` : faites l'étape 3, puis `docker compose -f deploy/compose.yml restart offsite-backup`.
+- `invalid_grant` : l'accès a été retiré (depuis <https://myaccount.google.com/permissions>) ou l'application est restée « En test ». Publiez-la (étape 1.4), refaites l'étape 3, puis `docker compose -f deploy/compose.yml restart offsite-backup`.
+
+#### 11.2.2 Vers un stockage compatible S3
+
+L'Object Storage S3 du Public Cloud d'OVHcloud en est un. Tout autre fournisseur compatible S3 convient de la même façon : seuls le point d'accès, la région et la clé changent. Le stockage est facturé par votre fournisseur selon le volume conservé. Laissez `KAIROS_DRIVE_CLIENT_ID` vide, sinon la copie part vers Google Drive.
 
 **1. Obtenir les cinq informations.** Créez un compartiment privé et une clé d'accès S3 en suivant la documentation de votre fournisseur. Pour OVHcloud, voyez les guides « Object Storage S3 » du Public Cloud sur <https://help.ovhcloud.com>. Il vous faut :
 - le **point d'accès** S3 (« endpoint »), une adresse `https://...` ;
@@ -371,17 +417,17 @@ docker compose -f deploy/compose.yml logs offsite-backup
 La dernière ligne doit être `offsite copy done: offsite:<nom-du-compartiment>`, et la console du fournisseur liste les fichiers `kairos-AAAA-MM-JJ.dump`. Vérifiez bien cette première copie : la copie a été testée contre un faux stockage S3, pas contre votre fournisseur.
 - Si une variable manque, le journal le dit (`Copie hors machine impossible, à renseigner dans deploy/.env : ...`). Corrigez puis relancez `docker compose -f deploy/compose.yml up -d`.
 - Si le journal montre une erreur de signature ou de somme de contrôle, vérifiez le point d'accès et la région, puis consultez la page de rclone propre à votre fournisseur (<https://rclone.org/s3/>).
-- En cas d'échec, le conteneur réessaie à la copie suivante, le lendemain à 04:00 UTC.
 
-**Désactiver la copie** :
+#### 11.2.3 Désactiver la copie
+
 1. retirez `offsite` de `COMPOSE_PROFILES` ;
 2. lancez `docker compose -f deploy/compose.yml --profile offsite rm -sf offsite-backup`.
 
-Les fichiers déjà copiés restent dans le compartiment. Supprimez-les depuis la console du fournisseur si vous n'en voulez plus.
+Les fichiers déjà copiés restent à destination. Supprimez-les depuis Google Drive ou la console du fournisseur si vous n'en voulez plus. Avec Google Drive, retirez aussi l'accès de Kairos sur <https://myaccount.google.com/permissions>.
 
 ### 11.3 Rapatrier les sauvegardes sur votre ordinateur
 
-Si la copie automatique est active, le plus simple est de télécharger un fichier depuis la console du fournisseur.
+Si la copie automatique est active, le plus simple est de télécharger un fichier depuis Google Drive ou la console du fournisseur.
 
 Sinon, en deux temps. Sur le VPS, copiez le contenu du volume dans un dossier ordinaire :
 
@@ -410,17 +456,20 @@ docker compose -f deploy/compose.yml exec -T backup ls /backups
 
 Le script arrête l'application, restaure en une seule transaction, puis relance l'application. Si la restauration échoue, l'application reste arrêtée et la base n'est pas modifiée. Lisez le message, corrigez, puis lancez `docker compose -f deploy/compose.yml start app`.
 
-**Depuis le compartiment S3**, par exemple sur un VPS neuf dont le volume est vide :
-1. Remplissez `deploy/.env` avec les variables `KAIROS_OFFSITE_*` de 11.2, **en retirant `offsite` de `COMPOSE_PROFILES` jusqu'à la fin de la restauration**. C'est aussi vrai si vous recopiez un `deploy/.env` sauvegardé : corrigez cette ligne avant de démarrer.
+**Depuis la copie hors machine** (Google Drive ou S3), par exemple sur un VPS neuf dont le volume est vide :
+1. Remplissez `deploy/.env` avec les variables de 11.2, **en retirant `offsite` de `COMPOSE_PROFILES` jusqu'à la fin de la restauration**. C'est aussi vrai si vous recopiez un `deploy/.env` sauvegardé : corrigez cette ligne avant de démarrer.
 2. Démarrez la pile (étape 7).
-3. Listez les copies et rapatriez celle de votre choix dans le volume, puis restaurez-la :
+3. Avec Google Drive, autorisez de nouveau Kairos (11.2.1, étape 3) : l'accès était rangé sur l'ancien VPS. Gardez le même client Google, sinon Kairos ne verra pas ses anciennes copies.
+4. Listez les copies et rapatriez celle de votre choix dans le volume, puis restaurez-la. Remplacez `<destination>` par `"offsite:Sauvegardes Kairos"` (Google Drive, guillemets compris) ou par `offsite:<nom-du-compartiment>` (S3) :
 
 ```bash
 cd ~/kairos
-docker compose -f deploy/compose.yml run --rm offsite-restore lsl offsite:<nom-du-compartiment>
-docker compose -f deploy/compose.yml run --rm offsite-restore copy offsite:<nom-du-compartiment>/kairos-AAAA-MM-JJ.dump /backups/
+docker compose -f deploy/compose.yml run --rm offsite-restore lsl <destination>
+docker compose -f deploy/compose.yml run --rm offsite-restore copy <destination>/kairos-AAAA-MM-JJ.dump /backups/
 ./deploy/backup/restore-database.sh /backups/kairos-AAAA-MM-JJ.dump
 ```
+
+Avec Google Drive, écrivez le chemin complet entre guillemets : `"offsite:Sauvegardes Kairos/kairos-AAAA-MM-JJ.dump"`. Vous pouvez aussi télécharger le fichier depuis <https://drive.google.com> et suivre le dernier cas ci-dessous.
 
 Une fois la restauration réussie, remettez `offsite` dans `COMPOSE_PROFILES` et relancez `docker compose -f deploy/compose.yml up -d` pour reprendre la copie quotidienne.
 

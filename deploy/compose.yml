@@ -2,14 +2,13 @@ name: kairos
 
 x-offsite-storage-environment: &offsite-storage-environment
   KAIROS_OFFSITE_BUCKET: ${KAIROS_OFFSITE_BUCKET:-}
-  RCLONE_CONFIG_OFFSITE_TYPE: s3
-  RCLONE_CONFIG_OFFSITE_PROVIDER: Other
-  RCLONE_CONFIG_OFFSITE_ENDPOINT: ${KAIROS_OFFSITE_ENDPOINT:-}
-  RCLONE_CONFIG_OFFSITE_REGION: ${KAIROS_OFFSITE_REGION:-}
-  RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID: ${KAIROS_OFFSITE_ACCESS_KEY_ID:-}
-  RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY: ${KAIROS_OFFSITE_SECRET_ACCESS_KEY:-}
-  RCLONE_CONFIG_OFFSITE_FORCE_PATH_STYLE: "true"
-  RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET: "true"
+  KAIROS_OFFSITE_ENDPOINT: ${KAIROS_OFFSITE_ENDPOINT:-}
+  KAIROS_OFFSITE_REGION: ${KAIROS_OFFSITE_REGION:-}
+  KAIROS_OFFSITE_ACCESS_KEY_ID: ${KAIROS_OFFSITE_ACCESS_KEY_ID:-}
+  KAIROS_OFFSITE_SECRET_ACCESS_KEY: ${KAIROS_OFFSITE_SECRET_ACCESS_KEY:-}
+  KAIROS_DRIVE_CLIENT_ID: ${KAIROS_DRIVE_CLIENT_ID:-}
+  KAIROS_DRIVE_CLIENT_SECRET: ${KAIROS_DRIVE_CLIENT_SECRET:-}
+  KAIROS_DRIVE_FOLDER: ${KAIROS_DRIVE_FOLDER:-}
 
 services:
   app:
@@ -138,18 +137,34 @@ services:
     volumes:
       - ./backup:/backup:ro
       - kairos-backups:/backups:ro
+      - kairos-google-drive:/drive-credentials:ro
     restart: unless-stopped
 
   offsite-restore:
     image: rclone/rclone:1.75.2
     profiles: ["offsite-restore"]
     environment: *offsite-storage-environment
+    entrypoint: ["sh", "/backup/run-rclone-on-offsite-remote.sh"]
     volumes:
+      - ./backup:/backup:ro
       - kairos-backups:/backups
+      - kairos-google-drive:/drive-credentials:ro
+
+  google-drive-authorize:
+    image: node:22-bookworm-slim
+    profiles: ["google-drive-authorize"]
+    environment:
+      KAIROS_DRIVE_CLIENT_ID: ${KAIROS_DRIVE_CLIENT_ID:-}
+      KAIROS_DRIVE_CLIENT_SECRET: ${KAIROS_DRIVE_CLIENT_SECRET:-}
+    command: ["node", "--experimental-strip-types", "--disable-warning=ExperimentalWarning", "/backup/authorize-google-drive.mts"]
+    volumes:
+      - ./backup:/backup:ro
+      - kairos-google-drive:/drive-credentials
 
 volumes:
   kairos-data:
   kairos-database:
   kairos-backups:
+  kairos-google-drive:
   caddy-data:
   caddy-config:
