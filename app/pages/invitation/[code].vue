@@ -4,7 +4,17 @@
     type="error"
     class="kairos-auth__card"
   >
-    Cette invitation est invalide, déjà utilisée ou expirée.
+    <p>Cette invitation est invalide, déjà utilisée ou expirée.</p>
+    <p class="mb-4">
+      Votre compte est déjà créé ? Connectez-vous avec l’email et le mot de passe choisis à l’inscription.
+    </p>
+    <v-btn
+      to="/connexion"
+      color="primary"
+      block
+    >
+      Se connecter
+    </v-btn>
   </v-alert>
   <v-card
     v-else

@@ -7,6 +7,7 @@
       <v-form @submit.prevent="submitLogin">
         <v-text-field
           v-model="email"
+          name="email"
           label="Email"
           type="email"
           autocomplete="email"
@@ -14,6 +15,7 @@
         />
         <v-text-field
           v-model="password"
+          name="password"
           label="Mot de passe"
           type="password"
           autocomplete="current-password"

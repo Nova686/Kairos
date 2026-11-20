@@ -3,6 +3,8 @@ import vuetify from 'vite-plugin-vuetify'
 import { brandColorStylesheet } from './shared/theme/brand-color-stylesheet.ts'
 import { brandBackgroundColor } from './shared/theme/brand-colors.ts'
 
+const sessionLifetimeSeconds = 30 * 24 * 60 * 60
+
 const databaseConflictErrorHandler = fileURLToPath(new URL('./server/error-handlers/answer-database-conflict.ts', import.meta.url))
 
 export default defineNuxtConfig({
@@ -28,6 +30,7 @@ export default defineNuxtConfig({
     trustProxyHeaders: false,
     ebayVerificationToken: '',
     ebayAccountDeletionEndpoint: '',
+    session: { maxAge: sessionLifetimeSeconds },
   },
   hooks: {
     'nitro:config': (nitroConfig) => {

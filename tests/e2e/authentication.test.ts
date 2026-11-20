@@ -127,6 +127,17 @@ describe('authentication', async () => {
     expect(currentUser).toMatchObject({ email: administratorEmail, isAdmin: true })
   })
 
+  it('keeps the session cookie for thirty days, so a home screen app stays signed in once closed', async () => {
+    const loginResponse = await fetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: administratorEmail, password: administratorPassword }),
+      headers: { 'content-type': 'application/json' },
+    })
+    const sessionCookieMaxAgeSeconds = Number(/;\s*Max-Age=(\d+)/i.exec(loginResponse.headers.getSetCookie()[0] ?? '')?.[1])
+
+    expect(sessionCookieMaxAgeSeconds).toBe(30 * 24 * 60 * 60)
+  })
+
   it('answers 401 on the current user after signing out through the library session route', async () => {
     const loginResponse = await fetch('/api/auth/login', {
       method: 'POST',
@@ -171,6 +182,7 @@ describe('authentication', async () => {
       headers: { 'content-type': 'application/json' },
     })
     const secondLookupResponse = await fetch(`/api/invitations/${code}`)
+    const usedInvitationPage = await (await fetch(`/invitation/${code}`)).text()
     const guestInvitationAttempt = await fetch('/api/invitations', {
       method: 'POST',
       headers: { cookie: extractSessionCookie(acceptResponse) },
@@ -179,6 +191,8 @@ describe('authentication', async () => {
     expect(lookupResponse.status).toBe(200)
     expect(acceptResponse.status).toBe(200)
     expect(secondLookupResponse.status).toBe(410)
+    expect(usedInvitationPage).toContain('Votre compte est déjà créé ?')
+    expect(usedInvitationPage).toMatch(/href="\/connexion"/)
     expect(guestInvitationAttempt.status).toBe(403)
   })
 })
