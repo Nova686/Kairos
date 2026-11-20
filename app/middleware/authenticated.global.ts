@@ -1,4 +1,4 @@
-const publicPathPattern = /^\/(connexion|confidentialite|invitation\/[^/]+)\/?$/
+const publicPathPattern = /^\/(connexion|confidentialite|conditions-utilisation|invitation\/[^/]+)\/?$/
 
 export default defineNuxtRouteMiddleware((destination) => {
   const { loggedIn } = useUserSession()
