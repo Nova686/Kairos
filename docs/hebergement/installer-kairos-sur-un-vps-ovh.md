@@ -347,6 +347,8 @@ En cas d'échec, le conteneur réessaie à la copie suivante, le lendemain à 04
 Kairos n'accède qu'aux fichiers qu'il crée lui-même dans votre Drive : il ne voit ni ne modifie le reste. Les copies arrivent dans le dossier **Sauvegardes Kairos**, visible sur <https://drive.google.com>. Les 14 copies tiennent largement dans les 15 Go gratuits.
 
 **1. Créer le client Google** (une fois, depuis un ordinateur). Sur <https://console.cloud.google.com>, connecté avec le compte Google qui recevra les sauvegardes :
+Si un de vos projets Google Cloud sauvegarde déjà vers Drive (une autre application), réutilisez-le : sautez les points 1 à 3 et faites seulement les points 4 et 5 dans ce projet. Kairos range ses copies dans son propre dossier et ne touche pas à ceux de l'autre application.
+
 1. Créez un projet, par exemple `Kairos` (sélecteur de projet en haut de la page, puis « Nouveau projet »). Un projet à part évite de modifier celui d'une autre application.
 2. Menu « API et services », puis « Bibliothèque » : cherchez **Google Drive API** et cliquez sur « Activer ».
 3. Menu « Google Auth Platform » (ou « Écran de consentement OAuth »), puis « Commencer » : nom de l'application `Kairos`, votre adresse comme adresse d'assistance et de contact, audience **Externe**.
