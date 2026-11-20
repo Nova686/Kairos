@@ -1,7 +1,7 @@
 import type { ProductDraft } from './product-draft.ts'
 
 export interface ProductCandidate {
-  origin: 'catalogue' | 'cardmarket' | 'tcgdex' | 'ebay' | 'identification'
+  origin: 'catalogue' | 'cardmarket' | 'tcgdex' | 'identification'
   label: string
   imageUrl: string | null
   productId: string | null

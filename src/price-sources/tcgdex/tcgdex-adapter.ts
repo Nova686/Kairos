@@ -7,6 +7,7 @@ import type { SourceAggregate } from '../price-source-types.ts'
 
 const tcgdexFrenchCardsEndpoint = 'https://api.tcgdex.net/v2/fr/cards'
 const tcgdexFrenchSetsEndpoint = 'https://api.tcgdex.net/v2/fr/sets'
+const tcgdexEnglishSetsEndpoint = 'https://api.tcgdex.net/v2/en/sets'
 const pocketSerieId = 'tcgp'
 
 interface TcgdexCardBrief {
@@ -65,7 +66,13 @@ export const searchTcgdexCards = async (frenchName: string, fetchFunction?: Fetc
   }))
 }
 
-export const listTcgdexCardSets = async (fetchFunction?: FetchFunction): Promise<CardSetOption[]> => {
+export interface CardSetNames {
+  id: string
+  frenchName: string
+  englishName: string
+}
+
+const listSetBriefsLatestFirst = async (setsEndpoint: string, fetchFunction?: FetchFunction): Promise<TcgdexSetBrief[]> => {
   const listingParameters = new URLSearchParams({
     'serie.id': `neq:${pocketSerieId}`,
     'sort:field': 'releaseDate',
@@ -73,11 +80,28 @@ export const listTcgdexCardSets = async (fetchFunction?: FetchFunction): Promise
   })
   const setBriefs = await requestSourceJson<TcgdexSetBrief[]>(
     'tcgdex',
-    `${tcgdexFrenchSetsEndpoint}?${listingParameters.toString()}`,
+    `${setsEndpoint}?${listingParameters.toString()}`,
     {},
     fetchFunction,
   )
-  return (setBriefs ?? []).map(setBrief => ({ id: setBrief.id, name: setBrief.name, cardCount: setBrief.cardCount.total }))
+  return setBriefs ?? []
+}
+
+export const listTcgdexCardSets = async (fetchFunction?: FetchFunction): Promise<CardSetOption[]> => {
+  const setBriefs = await listSetBriefsLatestFirst(tcgdexFrenchSetsEndpoint, fetchFunction)
+  return setBriefs.map(setBrief => ({ id: setBrief.id, name: setBrief.name, cardCount: setBrief.cardCount.total }))
+}
+
+export const listTcgdexSetNames = async (fetchFunction?: FetchFunction): Promise<CardSetNames[]> => {
+  const [frenchSetBriefs, englishSetBriefs] = await Promise.all([
+    listSetBriefsLatestFirst(tcgdexFrenchSetsEndpoint, fetchFunction),
+    listSetBriefsLatestFirst(tcgdexEnglishSetsEndpoint, fetchFunction),
+  ])
+  const englishNamesBySetId = new Map(englishSetBriefs.map(englishSetBrief => [englishSetBrief.id, englishSetBrief.name]))
+  return frenchSetBriefs.flatMap((frenchSetBrief) => {
+    const englishName = englishNamesBySetId.get(frenchSetBrief.id)
+    return englishName ? [{ id: frenchSetBrief.id, frenchName: frenchSetBrief.name, englishName }] : []
+  })
 }
 
 export const listTcgdexSetCards = async (setId: string, fetchFunction?: FetchFunction): Promise<CardSetCard[]> => {

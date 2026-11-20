@@ -51,7 +51,7 @@ const certificateIdentification: ProductIdentification = {
 
 const buildDependencies = (overrides: Partial<PsaCertificateDependencies> = {}): PsaCertificateDependencies => ({
   lookupPsaCertificate: async () => certificateIdentification,
-  productSearch: { searchTcgdexCards: async () => [], searchEbayListings: async () => [] },
+  productSearch: { searchTcgdexCards: async () => [], listCardSetNames: async () => [] },
   ...overrides,
 })
 

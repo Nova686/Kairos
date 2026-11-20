@@ -12,12 +12,10 @@ const originTitles: Record<ProductCandidate['origin'], string> = {
   catalogue: 'Dans votre catalogue',
   cardmarket: 'Cardmarket',
   tcgdex: 'TCGdex',
-  ebay: 'eBay',
   identification: 'Code-barres',
 }
 
 const unavailableSourceMessages: Record<string, string> = {
-  ebay: 'eBay indisponible : clés manquantes ou limite d’appels atteinte',
   tcgdex: 'TCGdex indisponible',
 }
 

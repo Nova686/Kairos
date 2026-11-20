@@ -23,7 +23,7 @@ const insertCardmarketProduct = async (database: KairosDatabase, idProduct: numb
 
 const noSources: ProductSearchDependencies = {
   searchTcgdexCards: async () => [],
-  searchEbayListings: async () => [],
+  listCardSetNames: async () => [],
 }
 
 describe('searchProductCandidates', () => {
@@ -112,39 +112,65 @@ describe('searchProductCandidates', () => {
     ])
   })
 
-  it('adds distinct eBay titles as other drafts', async () => {
+  it('lists each sealed product once for a French abbreviation and set code, such as etb ev10', async () => {
     const database = await createTestDatabase()
+    await insertCardmarketProduct(database, 812345, 'Destined Rivals Elite Trainer Box')
+    await insertCardmarketProduct(database, 812346, 'Destined Rivals Booster Box')
+    await insertCardmarketProduct(database, 790001, 'Prismatic Evolutions Elite Trainer Box')
     const dependencies: ProductSearchDependencies = {
       ...noSources,
-      searchEbayListings: async () => [
-        { source: 'ebay', kind: 'active', title: 'Lego 10300', priceCents: 1000, shippingCents: null, sourceCondition: null, url: 'u1', imageUrl: 'https://img/1' },
-        { source: 'ebay', kind: 'active', title: 'Lego 10300', priceCents: 1200, shippingCents: null, sourceCondition: null, url: 'u2', imageUrl: null },
-        { source: 'ebay', kind: 'active', title: 'Lego 10301', priceCents: 900, shippingCents: null, sourceCondition: null, url: 'u3', imageUrl: null },
-      ],
+      listCardSetNames: async () => [{ id: 'sv10', frenchName: 'Rivalités Destinées', englishName: 'Destined Rivals' }],
     }
 
-    const { candidates } = await searchProductCandidates(database, 'lego', dependencies)
+    const abbreviationSearch = await searchProductCandidates(database, 'etb ev10', dependencies)
+    const frenchNameSearch = await searchProductCandidates(database, 'display rivalités destinées', dependencies)
 
-    expect(candidates.map(candidate => candidate.label)).toEqual(['Lego 10300', 'Lego 10301'])
-    expect(candidates[0]).toMatchObject({ origin: 'ebay', imageUrl: 'https://img/1', draft: { category: 'other', ebayQuery: 'lego' } })
+    expect(abbreviationSearch.candidates).toEqual([
+      expect.objectContaining({ origin: 'cardmarket', label: 'Destined Rivals Elite Trainer Box', draft: expect.objectContaining({ cardmarketProductId: 812345 }) }),
+    ])
+    expect(frenchNameSearch.candidates.map(candidate => candidate.label)).toEqual(['Destined Rivals Booster Box'])
   })
 
-  it('reports a disabled eBay as unavailable and still returns catalogue and Cardmarket candidates', async () => {
+  it('finds a catalogue product by its own name or by the translated query', async () => {
     const database = await createTestDatabase()
     const userId = await insertUser(database)
-    await createProduct(database, userId, emptyProductDraft('Display Écarlate', 'pokemon-sealed'))
-    await insertCardmarketProduct(database, 7, 'Display Écarlate et Violet')
+    await createProduct(database, userId, emptyProductDraft('ETB EV10 scellé', 'pokemon-sealed'))
+    await createProduct(database, userId, emptyProductDraft('Destined Rivals Elite Trainer Box FR', 'pokemon-sealed'))
     const dependencies: ProductSearchDependencies = {
       ...noSources,
-      searchEbayListings: async () => {
-        throw new SourceDisabledError('ebay', 'EBAY_CLIENT_ID')
+      listCardSetNames: async () => [{ id: 'sv10', frenchName: 'Rivalités Destinées', englishName: 'Destined Rivals' }],
+    }
+
+    const { candidates } = await searchProductCandidates(database, 'etb ev10', dependencies)
+
+    expect(candidates.map(candidate => candidate.label).sort()).toEqual(['Destined Rivals Elite Trainer Box FR', 'ETB EV10 scellé'])
+    expect(candidates.every(candidate => candidate.origin === 'catalogue')).toBe(true)
+  })
+
+  it('still searches the typed words and reports TCGdex once when the set names cannot be read', async () => {
+    const database = await createTestDatabase()
+    await insertCardmarketProduct(database, 501, 'Elite Trainer Box Évolutions')
+    const dependencies: ProductSearchDependencies = {
+      searchTcgdexCards: async () => {
+        throw new SourceBlockedError('tcgdex', 'HTTP 429')
+      },
+      listCardSetNames: async () => {
+        throw new SourceBlockedError('tcgdex', 'HTTP 429')
       },
     }
 
-    const { candidates, unavailableSources } = await searchProductCandidates(database, 'display', dependencies)
+    const { candidates, unavailableSources } = await searchProductCandidates(database, 'etb évolutions', dependencies)
 
-    expect(candidates.map(candidate => candidate.origin)).toEqual(['catalogue', 'cardmarket'])
-    expect(unavailableSources).toEqual(['ebay'])
+    expect(candidates.map(candidate => candidate.label)).toEqual(['Elite Trainer Box Évolutions'])
+    expect(unavailableSources).toEqual(['tcgdex'])
+  })
+
+  it('never lists eBay listings, eBay only gives prices', async () => {
+    const database = await createTestDatabase()
+
+    const { candidates } = await searchProductCandidates(database, 'lego 10300', noSources)
+
+    expect(candidates).toEqual([])
   })
 
   it('reports a blocked TCGdex as unavailable', async () => {
@@ -165,29 +191,30 @@ describe('searchProductCandidates', () => {
     const database = await createTestDatabase()
     const dependencies: ProductSearchDependencies = {
       ...noSources,
-      searchEbayListings: async () => {
+      searchTcgdexCards: async () => {
         throw new Error('boom')
       },
     }
 
-    await expect(searchProductCandidates(database, 'lego', dependencies)).rejects.toThrow('boom')
+    await expect(searchProductCandidates(database, 'dracaufeu', dependencies)).rejects.toThrow('boom')
   })
 
-  it('leaves eBay out of a query shorter than three characters', async () => {
+  it('reports a disabled TCGdex as unavailable and still returns catalogue and Cardmarket candidates', async () => {
     const database = await createTestDatabase()
     const userId = await insertUser(database)
-    await createProduct(database, userId, emptyProductDraft('ETB Évolutions', 'pokemon-sealed'))
+    await createProduct(database, userId, emptyProductDraft('Display Écarlate', 'pokemon-sealed'))
+    await insertCardmarketProduct(database, 7, 'Display Écarlate et Violet')
     const dependencies: ProductSearchDependencies = {
       ...noSources,
-      searchEbayListings: async () => {
-        throw new Error('must not be called')
+      searchTcgdexCards: async () => {
+        throw new SourceDisabledError('tcgdex', 'TCGDEX')
       },
     }
 
-    const { candidates, unavailableSources } = await searchProductCandidates(database, ' et ', dependencies)
+    const { candidates, unavailableSources } = await searchProductCandidates(database, 'display', dependencies)
 
-    expect(candidates.map(candidate => candidate.label)).toEqual(['ETB Évolutions'])
-    expect(unavailableSources).toEqual([])
+    expect(candidates.map(candidate => candidate.origin)).toEqual(['catalogue', 'cardmarket'])
+    expect(unavailableSources).toEqual(['tcgdex'])
   })
 
   it('returns nothing for a blank query without calling sources', async () => {
@@ -196,7 +223,7 @@ describe('searchProductCandidates', () => {
       searchTcgdexCards: async () => {
         throw new Error('must not be called')
       },
-      searchEbayListings: async () => {
+      listCardSetNames: async () => {
         throw new Error('must not be called')
       },
     }

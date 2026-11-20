@@ -3,6 +3,7 @@ import {
   fetchTcgdexCardAggregate,
   listTcgdexCardSets,
   listTcgdexSetCards,
+  listTcgdexSetNames,
   searchTcgdexCards,
 } from '../../src/price-sources/tcgdex/tcgdex-adapter.ts'
 
@@ -16,6 +17,19 @@ const recordingFetch = (fixturePath: string) => {
     return new Response(readFixtureText(fixturePath), { status: 200 })
   }
   return { requests, fetchFunction }
+}
+
+const fixtureFetchByUrlPrefix = (fixturePathsByUrlPrefix: Record<string, string>) => {
+  const requestedUrls: string[] = []
+  const fetchFunction = async (url: string | URL | Request): Promise<Response> => {
+    const requestedUrl = String(url)
+    requestedUrls.push(requestedUrl)
+    const matchingPrefix = Object.keys(fixturePathsByUrlPrefix).find(urlPrefix => requestedUrl.startsWith(urlPrefix))
+    return matchingPrefix
+      ? new Response(readFixtureText(fixturePathsByUrlPrefix[matchingPrefix] ?? ''), { status: 200 })
+      : new Response('not found', { status: 404 })
+  }
+  return { requestedUrls, fetchFunction }
 }
 
 describe('TCGdex', () => {
@@ -43,6 +57,20 @@ describe('TCGdex', () => {
     )
     expect(cardSets[0]).toEqual({ id: 'me06', name: 'Règne Delta', cardCount: 141 })
     expect(cardSets).toHaveLength(4)
+  })
+
+  it('pairs each set French name with its English name, leaving out the sets with no English release', async () => {
+    const { requestedUrls, fetchFunction } = fixtureFetchByUrlPrefix({
+      'https://api.tcgdex.net/v2/fr/sets?': 'tcgdex/sets-latest-first.json',
+      'https://api.tcgdex.net/v2/en/sets?': 'tcgdex/sets-latest-first-en.json',
+    })
+    const cardSetNames = await listTcgdexSetNames(fetchFunction)
+    expect(requestedUrls).toHaveLength(2)
+    expect(cardSetNames).toEqual([
+      { id: 'me06', frenchName: 'Règne Delta', englishName: 'Delta Reign' },
+      { id: '30th', frenchName: '30ᵉ Anniversaire', englishName: '30th Celebration' },
+      { id: 'me05', frenchName: 'Nuit Noire', englishName: 'Pitch Black' },
+    ])
   })
 
   it('lists every card of a set with its number and the set name', async () => {

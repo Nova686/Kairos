@@ -43,7 +43,7 @@ const buildLookups = (
       upcitemdbCalls.push(barcode)
       return null
     },
-    productSearch: { searchTcgdexCards: async () => [], searchEbayListings: async () => [] },
+    productSearch: { searchTcgdexCards: async () => [], listCardSetNames: async () => [] },
     ...overrides,
   }
 }

@@ -4,23 +4,20 @@ import { cardmarketProducts, products } from '../../database/schema/index.ts'
 import { emptyProductDraft, type ProductDraft } from '../../../shared/catalogue/product-draft.ts'
 import { isProductCategory } from '../../../shared/catalogue/product-category.ts'
 import { searchCardmarketCatalogue } from '../../../src/price-sources/cardmarket/search-cardmarket-catalogue.ts'
-import { searchEbayListings } from '../../../src/price-sources/ebay/ebay-adapter.ts'
 import type { CardCandidate } from '../../../src/price-sources/card-candidate.ts'
-import {
-  SourceBlockedError,
-  SourceDisabledError,
-  type ListingObservation,
-} from '../../../src/price-sources/price-source-types.ts'
-import { searchTcgdexCards } from '../../../src/price-sources/tcgdex/tcgdex-adapter.ts'
+import { SourceBlockedError, SourceDisabledError } from '../../../src/price-sources/price-source-types.ts'
+import { readTcgdexSetNamesDaily } from '../../../src/price-sources/tcgdex/read-tcgdex-set-names-daily.ts'
+import { searchTcgdexCards, type CardSetNames } from '../../../src/price-sources/tcgdex/tcgdex-adapter.ts'
 import type { Product } from './catalogue-service.ts'
 import type { ProductCandidate } from '../../../shared/catalogue/product-candidate.ts'
 import { foldAccentsAndCase } from '../../../shared/text/fold-accents-and-case.ts'
+import { translateFrenchProductQuery } from './translate-french-product-query.ts'
 
 export type { ProductCandidate }
 
 export interface ProductSearchDependencies {
   searchTcgdexCards: (frenchName: string) => Promise<CardCandidate[]>
-  searchEbayListings: (query: string) => Promise<ListingObservation[]>
+  listCardSetNames: () => Promise<CardSetNames[]>
 }
 
 export interface ProductSearchOutcome {
@@ -29,11 +26,10 @@ export interface ProductSearchOutcome {
 }
 
 const maximumCandidatesPerOrigin = 10
-const minimumEbayQueryLength = 3
 
 const defaultDependencies: ProductSearchDependencies = {
   searchTcgdexCards: frenchName => searchTcgdexCards(frenchName),
-  searchEbayListings: query => searchEbayListings(query),
+  listCardSetNames: () => readTcgdexSetNamesDaily(),
 }
 
 export const splitIntoSearchableWords = (query: string): string[] =>
@@ -101,20 +97,19 @@ export const searchProductCandidates = async (
   }
 
   const unavailableSources: string[] = []
-  const [tcgdexCards, ebayListings, allCardmarketProducts] = await Promise.all([
+  const [tcgdexCards, cardSetNames, allCardmarketProducts] = await Promise.all([
     settleSource('tcgdex', () => dependencies.searchTcgdexCards(trimmedQuery), unavailableSources),
-    trimmedQuery.length >= minimumEbayQueryLength
-      ? settleSource('ebay', () => dependencies.searchEbayListings(trimmedQuery), unavailableSources)
-      : Promise.resolve([]),
+    settleSource('tcgdex', () => dependencies.listCardSetNames(), unavailableSources),
     database.select().from(cardmarketProducts),
   ])
-  unavailableSources.sort()
 
-  const matchingCardmarketProducts = searchCardmarketCatalogue(
-    allCardmarketProducts,
-    trimmedQuery,
-    allCardmarketProducts.length,
-  )
+  const queryVariants = [...new Set([trimmedQuery, translateFrenchProductQuery(trimmedQuery, cardSetNames)])]
+  const queryVariantWords = queryVariants.map(splitIntoSearchableWords).filter(variantWords => variantWords.length > 0)
+  const matchingCardmarketProducts = queryVariants
+    .flatMap(queryVariant => searchCardmarketCatalogue(allCardmarketProducts, queryVariant, allCardmarketProducts.length))
+    .filter((cardmarketProduct, position, matchedProducts) =>
+      matchedProducts.findIndex(otherProduct => otherProduct.idProduct === cardmarketProduct.idProduct) === position)
+    .sort((firstProduct, secondProduct) => firstProduct.name.length - secondProduct.name.length)
   const externalCardmarketIds = matchingCardmarketProducts.map(cardmarketProduct => cardmarketProduct.idProduct)
   const externalTcgdexIds = tcgdexCards.map(tcgdexCard => tcgdexCard.sourceCardId)
 
@@ -128,7 +123,7 @@ export const searchProductCandidates = async (
     : []
   const nameMatchingProducts = catalogueProducts.filter((product) => {
     const searchableName = foldAccentsAndCase(product.name)
-    return queryWords.every(queryWord => searchableName.includes(queryWord))
+    return queryVariantWords.some(variantWords => variantWords.every(queryWord => searchableName.includes(queryWord)))
   })
   const catalogueProductsToShow = [...nameMatchingProducts, ...linkedCatalogueProducts].filter(
     (product, position, shownProducts) =>
@@ -154,24 +149,12 @@ export const searchProductCandidates = async (
     .slice(0, maximumCandidatesPerOrigin)
     .map(tcgdexCard => toTcgdexCandidate(tcgdexCard, tcgdexCard.setName ? `${tcgdexCard.name} (${tcgdexCard.setName})` : tcgdexCard.name))
 
-  const distinctEbayListings = ebayListings.filter(
-    (listing, position, allListings) => allListings.findIndex(otherListing => otherListing.title === listing.title) === position,
-  )
-  const ebayCandidates: ProductCandidate[] = distinctEbayListings.slice(0, maximumCandidatesPerOrigin).map(listing => ({
-    origin: 'ebay',
-    label: listing.title,
-    imageUrl: listing.imageUrl,
-    productId: null,
-    draft: { ...emptyProductDraft(listing.title, 'other'), imageUrl: listing.imageUrl, ebayQuery: trimmedQuery },
-  }))
-
   return {
     candidates: [
       ...catalogueProductsToShow.slice(0, maximumCandidatesPerOrigin).map(toCatalogueCandidate),
       ...cardmarketCandidates,
       ...tcgdexCandidates,
-      ...ebayCandidates,
     ],
-    unavailableSources,
+    unavailableSources: [...new Set(unavailableSources)].sort(),
   }
 }

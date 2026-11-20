@@ -24,6 +24,6 @@ describe('productCandidateKey', () => {
   })
 
   it('falls back to the label for a candidate without any identifier', () => {
-    expect(productCandidateKey(candidate({ origin: 'ebay', label: 'ETB Zygarde' }))).toBe('ebay|ETB Zygarde')
+    expect(productCandidateKey(candidate({ origin: 'identification', label: 'ETB Zygarde' }))).toBe('identification|ETB Zygarde')
   })
 })

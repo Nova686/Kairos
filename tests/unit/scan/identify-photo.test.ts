@@ -46,7 +46,7 @@ const buildDependencies = (
   embedder: fakeEmbedder(unitVector(0)),
   textReader: fakeReader(''),
   searchCandidates: query =>
-    searchProductCandidates(database, query, { searchTcgdexCards: async () => [], searchEbayListings: async () => [] }),
+    searchProductCandidates(database, query, { searchTcgdexCards: async () => [], listCardSetNames: async () => [] }),
   ...overrides,
 })
 
@@ -178,7 +178,7 @@ describe('identifyPhoto', () => {
         textReader: fakeReader('Coffret Dresseur Elite'),
         searchCandidates: async (query) => {
           searchCount += 1
-          return searchProductCandidates(database, query, { searchTcgdexCards: async () => [], searchEbayListings: async () => [] })
+          return searchProductCandidates(database, query, { searchTcgdexCards: async () => [], listCardSetNames: async () => [] })
         },
       }),
     )
