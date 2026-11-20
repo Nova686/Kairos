@@ -259,6 +259,19 @@ h1,
   text-align: center;
 }
 
+.kairos-auth__legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.kairos-auth__legal-link {
+  color: var(--kairos-text-secondary);
+}
+
 @media (max-width: 959.98px) {
   .kairos-desktop-only {
     display: none !important;
