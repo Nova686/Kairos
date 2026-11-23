@@ -42,7 +42,7 @@
       Services consultés
     </h2>
     <p class="privacy-policy__paragraph">
-      Pour identifier un produit et estimer son prix, Kairos interroge eBay, Cardmarket, TCGdex, PSA, Open Beauty Facts et UPCitemdb avec le code-barres, le numéro de certificat ou le nom du produit, jamais avec vos données personnelles.
+      Pour identifier un produit et estimer son prix, Kairos interroge eBay, Cardmarket, TCGdex, Open Beauty Facts et UPCitemdb avec le code-barres ou le nom du produit, jamais avec vos données personnelles.
     </p>
 
     <h2 class="privacy-policy__heading">
@@ -53,7 +53,7 @@
     </p>
 
     <p class="privacy-policy__updated">
-      Mise à jour le 20 novembre 2026.
+      Mise à jour le 23 novembre 2026.
     </p>
     <NuxtLink
       to="/connexion"

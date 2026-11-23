@@ -5,5 +5,4 @@ export const probeReferences = {
   tcgdexFrenchName: 'Dracaufeu',
   upcitemdbBarcode: '0820650853715',
   openBeautyFactsBarcode: '8005610625645',
-  psaCertificateSetting: 'PSA_PROBE_CERTIFICATE',
 }

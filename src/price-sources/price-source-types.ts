@@ -1,6 +1,6 @@
 export type PriceSourceId = 'ebay' | 'cardmarket' | 'tcgdex' | 'vinted' | 'leboncoin'
 
-export type SourceId = PriceSourceId | 'psa' | 'openbeautyfacts' | 'upcitemdb'
+export type SourceId = PriceSourceId | 'openbeautyfacts' | 'upcitemdb'
 
 export type ListingKind = 'active' | 'sold' | 'source-aggregate' | 'manual'
 

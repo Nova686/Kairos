@@ -25,7 +25,6 @@ services:
       EBAY_CLIENT_SECRET: ${EBAY_CLIENT_SECRET:-}
       NUXT_EBAY_VERIFICATION_TOKEN: ${EBAY_VERIFICATION_TOKEN:-}
       NUXT_EBAY_ACCOUNT_DELETION_ENDPOINT: https://${KAIROS_DOMAIN:?set KAIROS_DOMAIN in deploy/.env}/api/ebay/account-deletion
-      PSA_API_TOKEN: ${PSA_API_TOKEN:-}
       NUXT_DATABASE_URL: postgres://kairos:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}@database:5432/kairos
     volumes:
       - kairos-data:/app/.data

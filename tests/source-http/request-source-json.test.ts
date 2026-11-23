@@ -36,6 +36,6 @@ describe('readRequiredSetting', () => {
 
   it('returns the setting when present', () => {
     process.env.KAIROS_TEST_PRESENT_SETTING = 'abc'
-    expect(readRequiredSetting('psa', 'KAIROS_TEST_PRESENT_SETTING')).toBe('abc')
+    expect(readRequiredSetting('ebay', 'KAIROS_TEST_PRESENT_SETTING')).toBe('abc')
   })
 })

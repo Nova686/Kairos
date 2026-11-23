@@ -51,7 +51,6 @@
           <v-tabs-window-item value="code-barres">
             <BarcodeScanner
               v-if="displayedTab === 'code-barres'"
-              v-model:psa-mode="isPsaMode"
               :photo-recognition-available="isPhotoRecognitionAvailable"
               @code-submitted="identify"
             />
@@ -95,7 +94,7 @@
               class="add-page__card"
             >
               <ProductCandidatePicker
-                :key="pendingBarcode ?? 'psa-scan'"
+                :key="pendingBarcode ?? 'identified-candidates'"
                 :identified-candidates="identifiedCandidates"
                 :pending-barcode="pendingBarcode"
                 :focus-search="isUnknownCode"
@@ -163,8 +162,8 @@ const displayedTab = computed({
   },
 })
 
-const addPickedProduct = (product: ProductReference, prefill: ScanProductPrefill | null = null) => {
-  purchaseForm.value?.addLine(product, prefill)
+const addPickedProduct = (product: ProductReference) => {
+  purchaseForm.value?.addLine(product)
 }
 
 const photoCapture = useTemplateRef('photoCapture')
@@ -178,7 +177,6 @@ const removePickedProduct = (productId: string) => {
 }
 
 const {
-  isPsaMode,
   isIdentifying,
   errorMessage: scanErrorMessage,
   noticeMessage,

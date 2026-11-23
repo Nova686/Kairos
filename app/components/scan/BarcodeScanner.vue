@@ -1,10 +1,5 @@
 <template>
   <div class="barcode-scanner">
-    <v-switch
-      v-model="isPsaMode"
-      label="Carte gradée PSA (numéro de certificat)"
-      hide-details
-    />
     <div
       v-show="cameraState === 'scanning' || cameraState === 'starting'"
       class="barcode-scanner__viewport"
@@ -76,7 +71,7 @@
     >
       <v-text-field
         v-model="manualCode"
-        :label="isPsaMode ? 'Numéro de certificat' : 'Code-barres'"
+        label="Code-barres"
         inputmode="numeric"
         hide-details
       />
@@ -95,7 +90,6 @@
 const props = defineProps({
   photoRecognitionAvailable: { type: Boolean, default: true },
 })
-const isPsaMode = defineModel<boolean>('psaMode', { default: false })
 const emit = defineEmits<{ codeSubmitted: [code: string] }>()
 
 const cameraFallback = computed(() => describeCameraFallback(props.photoRecognitionAvailable))

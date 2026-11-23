@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { lookupOpenBeautyFacts } from '../../src/identification-sources/open-beauty-facts.ts'
-import { lookupPsaCertificate } from '../../src/identification-sources/psa-certificate.ts'
 import { lookupUpcitemdb } from '../../src/identification-sources/upcitemdb.ts'
-import { SourceBlockedError, SourceDisabledError } from '../../src/price-sources/price-source-types.ts'
+import { SourceBlockedError } from '../../src/price-sources/price-source-types.ts'
 
 const recordingFetch = (fixtureName: string | null, status = 200) => {
   const requests: { url: string; init: RequestInit }[] = []
@@ -57,31 +56,5 @@ describe('Open Beauty Facts', () => {
   it('returns null when the product is unknown', async () => {
     const { fetchFunction } = recordingFetch('openbeautyfacts-not-found.json')
     expect(await lookupOpenBeautyFacts('3600523307722', fetchFunction)).toBeNull()
-  })
-})
-
-describe('PSA certificate', () => {
-  afterEach(() => {
-    delete process.env.PSA_API_TOKEN
-  })
-
-  it('identifies a graded card from its certificate', async () => {
-    process.env.PSA_API_TOKEN = 'psa-token'
-    const { requests, fetchFunction } = recordingFetch('psa-certificate.json')
-    const identification = await lookupPsaCertificate('12345678', fetchFunction)
-    expect(requests[0]?.url).toBe('https://api.psacard.com/publicapi/cert/GetByCertNumber/12345678')
-    expect(new Headers(requests[0]?.init.headers).get('authorization')).toBe('bearer psa-token')
-    expect(identification).toMatchObject({
-      source: 'psa',
-      name: '2023 POKEMON SV3.5 151 CHARIZARD EX #199',
-      gradingCompany: 'PSA',
-      grade: '10',
-      certificateNumber: '12345678',
-    })
-  })
-
-  it('disables PSA without a token', async () => {
-    const { fetchFunction } = recordingFetch('psa-certificate.json')
-    await expect(lookupPsaCertificate('12345678', fetchFunction)).rejects.toBeInstanceOf(SourceDisabledError)
   })
 })

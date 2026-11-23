@@ -23,7 +23,6 @@ export const describeRefreshOutcome = (unavailableSources: UnavailableSource[]):
 const identificationSourceLabels: Record<string, string> = {
   openbeautyfacts: 'Open Beauty Facts',
   upcitemdb: 'UPCitemdb',
-  psa: 'PSA',
 }
 
 export const describeUnavailableIdentificationSources = (sourceNames: string[]): string =>

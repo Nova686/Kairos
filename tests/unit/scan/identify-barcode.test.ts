@@ -22,9 +22,6 @@ const identification = (source: 'openbeautyfacts' | 'upcitemdb'): ProductIdentif
   brand: 'YSL',
   imageUrl: 'https://img.example/rouge.jpg',
   barcode: '3614272049529',
-  gradingCompany: null,
-  grade: null,
-  certificateNumber: null,
 })
 
 const buildLookups = (
