@@ -24,7 +24,7 @@ describe('useScanIdentification', () => {
     await scan.identify('3017620422003')
 
     expect(sendRequest).toHaveBeenCalledWith('/api/scan/barcode/3017620422003')
-    expect(onProductReady).toHaveBeenCalledWith(kinderProduct, null)
+    expect(onProductReady).toHaveBeenCalledWith(kinderProduct)
     expect(scan.pendingBarcode.value).toBeNull()
   })
 
@@ -61,7 +61,7 @@ describe('useScanIdentification', () => {
       body: { productId: 'product-1' },
     })
     expect(scan.noticeMessage.value).toBe('Code-barres associé.')
-    expect(onProductReady).toHaveBeenCalledWith(kinderProduct, null)
+    expect(onProductReady).toHaveBeenCalledWith(kinderProduct)
   })
 
   it('flags an unknown code only when the barcode has neither a known product nor candidates', async () => {
@@ -93,25 +93,6 @@ describe('useScanIdentification', () => {
     expect(onProductReady).toHaveBeenCalledOnce()
   })
 
-  it('sends certificate numbers to PSA in PSA mode and prefills the grading fields', async () => {
-    const prefilledStockItem = { condition: 'graded', gradingCompany: 'PSA', grade: '10', certificateNumber: '12345678' }
-    const sendRequest = vi.fn().mockResolvedValue({
-      identification: null,
-      candidates: [candidateFor('Dracaufeu')],
-      prefilledStockItem,
-      unavailableSources: [],
-    })
-    const onProductReady = vi.fn()
-    const scan = useScanIdentification(onProductReady, sendRequest)
-    scan.isPsaMode.value = true
-
-    await scan.identify('12345678')
-    await scan.pickProduct(kinderProduct)
-
-    expect(sendRequest).toHaveBeenCalledWith('/api/scan/psa/12345678')
-    expect(onProductReady).toHaveBeenCalledWith(kinderProduct, prefilledStockItem)
-  })
-
   it('ignores an older in-flight response once an invalid code was entered', async () => {
     let releaseResponse: (value: unknown) => void = () => {}
     const sendRequest = vi.fn().mockReturnValue(new Promise((resolve) => {
@@ -134,34 +115,13 @@ describe('useScanIdentification', () => {
     expect(scan.isIdentifying.value).toBe(false)
   })
 
-  it('applies the PSA prefill once only', async () => {
-    const prefilledStockItem = { condition: 'graded', gradingCompany: 'PSA', grade: '10', certificateNumber: '12345678' }
-    const sendRequest = vi.fn().mockResolvedValue({
-      identification: null,
-      candidates: [],
-      prefilledStockItem,
-      unavailableSources: [],
-    })
-    const onProductReady = vi.fn()
-    const scan = useScanIdentification(onProductReady, sendRequest)
-    scan.isPsaMode.value = true
-    await scan.identify('12345678')
-
-    await scan.pickProduct(kinderProduct)
-    await scan.pickProduct(kinderProduct)
-
-    expect(onProductReady).toHaveBeenNthCalledWith(1, kinderProduct, prefilledStockItem)
-    expect(onProductReady).toHaveBeenNthCalledWith(2, kinderProduct, null)
-  })
-
-  it('shows the server message when the certificate is already owned', async () => {
-    const sendRequest = vi.fn().mockRejectedValue({ data: { statusMessage: 'Certificat déjà possédé' } })
+  it('shows the server message when the identification fails', async () => {
+    const sendRequest = vi.fn().mockRejectedValue({ data: { statusMessage: 'Service indisponible' } })
     const scan = useScanIdentification(vi.fn(), sendRequest)
-    scan.isPsaMode.value = true
 
-    await scan.identify('12345678')
+    await scan.identify('3017620422003')
 
-    expect(scan.errorMessage.value).toBe('Certificat déjà possédé')
+    expect(scan.errorMessage.value).toBe('Service indisponible')
     expect(scan.isIdentifying.value).toBe(false)
   })
 })

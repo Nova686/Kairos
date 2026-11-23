@@ -13,12 +13,6 @@ export interface PurchaseFormLine {
   locationId: string | null
 }
 
-export interface PurchaseLinePrefill {
-  gradingCompany: string
-  grade: string
-  certificateNumber: string
-}
-
 export const usePurchaseForm = () => {
   const lines = ref<PurchaseFormLine[]>([])
   const purchasedOn = ref(todayAsLocalCalendarDate())
@@ -42,7 +36,7 @@ export const usePurchaseForm = () => {
   const locations = computed<LocationRow[]>(() => fetchedLocations.value ?? [])
   const persons = computed<PersonRow[]>(() => fetchedPersons.value ?? [])
 
-  const addLine = (product: ProductReference, prefill: PurchaseLinePrefill | null = null) => {
+  const addLine = (product: ProductReference) => {
     if (isLocked.value) {
       return
     }
@@ -51,9 +45,9 @@ export const usePurchaseForm = () => {
       lineKey: nextLineKey,
       product,
       condition: conditionCodesFor(product.category)[0]!,
-      gradingCompany: prefill?.gradingCompany ?? '',
-      grade: prefill?.grade ?? '',
-      certificateNumber: prefill?.certificateNumber ?? '',
+      gradingCompany: '',
+      grade: '',
+      certificateNumber: '',
       locationId: null,
     })
   }

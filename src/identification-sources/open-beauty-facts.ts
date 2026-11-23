@@ -23,8 +23,5 @@ export const lookupOpenBeautyFacts = async (
     brand: lookup.product?.brands || null,
     imageUrl: lookup.product?.image_front_url ?? null,
     barcode,
-    gradingCompany: null,
-    grade: null,
-    certificateNumber: null,
   }
 }

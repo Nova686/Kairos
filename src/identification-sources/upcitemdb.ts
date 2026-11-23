@@ -20,8 +20,5 @@ export const lookupUpcitemdb = async (barcode: string, fetchFunction?: FetchFunc
     brand: firstMatch.brand || null,
     imageUrl: firstMatch.images?.[0] ?? null,
     barcode,
-    gradingCompany: null,
-    grade: null,
-    certificateNumber: null,
   }
 }
