@@ -2,8 +2,12 @@ import { inArray, or } from 'drizzle-orm'
 import type { KairosDatabase } from '../../database/open-database.ts'
 import { cardmarketProducts, products } from '../../database/schema/index.ts'
 import { emptyProductDraft, type ProductDraft } from '../../../shared/catalogue/product-draft.ts'
-import { isProductCategory } from '../../../shared/catalogue/product-category.ts'
-import { searchCardmarketCatalogue } from '../../../src/price-sources/cardmarket/search-cardmarket-catalogue.ts'
+import { isProductCategory, type ProductCategory } from '../../../shared/catalogue/product-category.ts'
+import { sealedProductKindOf } from '../../../shared/catalogue/sealed-product-kind.ts'
+import {
+  searchCardmarketCatalogue,
+  type CardmarketCatalogueProduct,
+} from '../../../src/price-sources/cardmarket/search-cardmarket-catalogue.ts'
 import type { CardCandidate } from '../../../src/price-sources/card-candidate.ts'
 import { SourceBlockedError, SourceDisabledError } from '../../../src/price-sources/price-source-types.ts'
 import { readTcgdexSetNamesDaily } from '../../../src/price-sources/tcgdex/read-tcgdex-set-names-daily.ts'
@@ -27,7 +31,7 @@ export interface ProductSearchOutcome {
 
 const maximumCandidatesPerOrigin = 10
 
-const defaultDependencies: ProductSearchDependencies = {
+export const liveProductSearchDependencies: ProductSearchDependencies = {
   searchTcgdexCards: frenchName => searchTcgdexCards(frenchName),
   listCardSetNames: () => readTcgdexSetNamesDaily(),
 }
@@ -69,6 +73,19 @@ export const toTcgdexCandidate = (tcgdexCard: CardCandidate, label: string): Pro
   },
 })
 
+export const toCardmarketCandidate = (cardmarketProduct: CardmarketCatalogueProduct, seriesName: string | null): ProductCandidate => ({
+  origin: 'cardmarket',
+  label: cardmarketProduct.name,
+  imageUrl: null,
+  productId: null,
+  draft: {
+    ...emptyProductDraft(cardmarketProduct.name, 'pokemon-sealed'),
+    productType: sealedProductKindOf(cardmarketProduct.categoryName),
+    seriesName,
+    cardmarketProductId: cardmarketProduct.idProduct,
+  },
+})
+
 export const settleSource = async <TOutcome>(
   sourceName: string,
   search: () => Promise<TOutcome[]>,
@@ -88,7 +105,8 @@ export const settleSource = async <TOutcome>(
 export const searchProductCandidates = async (
   database: KairosDatabase,
   query: string,
-  dependencies: ProductSearchDependencies = defaultDependencies,
+  dependencies: ProductSearchDependencies = liveProductSearchDependencies,
+  productCategory: ProductCategory | null = null,
 ): Promise<ProductSearchOutcome> => {
   const trimmedQuery = query.trim()
   const queryWords = splitIntoSearchableWords(trimmedQuery)
@@ -97,10 +115,14 @@ export const searchProductCandidates = async (
   }
 
   const unavailableSources: string[] = []
+  const searchesCards = productCategory === null || productCategory === 'graded-card'
+  const searchesSealedProducts = productCategory === null || productCategory === 'pokemon-sealed'
   const [tcgdexCards, cardSetNames, allCardmarketProducts] = await Promise.all([
-    settleSource('tcgdex', () => dependencies.searchTcgdexCards(trimmedQuery), unavailableSources),
-    settleSource('tcgdex', () => dependencies.listCardSetNames(), unavailableSources),
-    database.select().from(cardmarketProducts),
+    searchesCards ? settleSource('tcgdex', () => dependencies.searchTcgdexCards(trimmedQuery), unavailableSources) : [],
+    searchesCards || searchesSealedProducts
+      ? settleSource('tcgdex', () => dependencies.listCardSetNames(), unavailableSources)
+      : [],
+    searchesSealedProducts ? database.select().from(cardmarketProducts) : [],
   ])
 
   const queryVariants = [...new Set([trimmedQuery, translateFrenchProductQuery(trimmedQuery, cardSetNames)])]
@@ -127,7 +149,8 @@ export const searchProductCandidates = async (
   })
   const catalogueProductsToShow = [...nameMatchingProducts, ...linkedCatalogueProducts].filter(
     (product, position, shownProducts) =>
-      shownProducts.findIndex(otherProduct => otherProduct.id === product.id) === position,
+      (productCategory === null || product.category === productCategory)
+      && shownProducts.findIndex(otherProduct => otherProduct.id === product.id) === position,
   )
 
   const knownCardmarketIds = new Set(catalogueProducts.map(product => product.cardmarketProductId))
@@ -136,13 +159,7 @@ export const searchProductCandidates = async (
   const cardmarketCandidates: ProductCandidate[] = matchingCardmarketProducts
     .filter(cardmarketProduct => !knownCardmarketIds.has(cardmarketProduct.idProduct))
     .slice(0, maximumCandidatesPerOrigin)
-    .map(cardmarketProduct => ({
-      origin: 'cardmarket',
-      label: cardmarketProduct.name,
-      imageUrl: null,
-      productId: null,
-      draft: { ...emptyProductDraft(cardmarketProduct.name, 'pokemon-sealed'), cardmarketProductId: cardmarketProduct.idProduct },
-    }))
+    .map(cardmarketProduct => toCardmarketCandidate(cardmarketProduct, null))
 
   const tcgdexCandidates: ProductCandidate[] = tcgdexCards
     .filter(tcgdexCard => !knownTcgdexIds.has(tcgdexCard.sourceCardId))

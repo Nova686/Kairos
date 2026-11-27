@@ -4,175 +4,173 @@
       <div class="kairos-label product-candidate-picker__group">
         Résultats du scan
       </div>
-      <v-list
-        bg-color="transparent"
-        class="pa-0"
-      >
-        <v-list-item
-          v-for="candidate in identifiedCandidates"
-          :key="`identified-${productCandidateKey(candidate)}`"
-          :title="candidate.label"
-          :subtitle="describeCandidate(candidate)"
-          rounded="lg"
-          @click="pickCandidate(candidate)"
-        >
-          <template #prepend>
-            <ProductThumbnail
-              class="mr-3"
-              :category="candidate.draft.category"
-              :image-url="candidate.imageUrl"
-            />
-          </template>
-          <template #append>
-            <v-chip
-              color="primary"
-              prepend-icon="mdi-plus"
-            >
-              Ajouter
-            </v-chip>
-          </template>
-        </v-list-item>
-      </v-list>
-    </div>
-    <v-autocomplete
-      v-model="cardSetId"
-      label="Extension"
-      :items="cardSetOptions"
-      item-title="name"
-      item-value="id"
-      :item-props="describeCardSetOption"
-      :custom-filter="matchesCardSetName"
-      :loading="isLoadingCardSets"
-      :error-messages="cardSetsErrorMessage"
-      :hide-details="!cardSetsErrorMessage"
-      prepend-inner-icon="mdi-cards-outline"
-      no-data-text="Aucune extension"
-      clearable
-    />
-    <v-text-field
-      v-model="searchText"
-      :label="searchFieldLabel"
-      :autofocus="focusSearch"
-      prepend-inner-icon="mdi-magnify"
-      :loading="isSearching"
-      clearable
-      hide-details
-    />
-    <v-alert
-      v-if="searchErrorMessage"
-      type="error"
-      role="alert"
-    >
-      {{ searchErrorMessage }}
-    </v-alert>
-    <p
-      v-for="unavailableMessage in unavailableMessages"
-      :key="unavailableMessage"
-      class="text-medium-emphasis"
-    >
-      {{ unavailableMessage }}
-    </p>
-    <div
-      v-for="candidateGroup in candidateGroups"
-      :key="candidateGroup.origin"
-    >
-      <div class="kairos-label product-candidate-picker__group">
-        {{ candidateGroup.title }}
-      </div>
-      <v-list
-        bg-color="transparent"
-        class="pa-0"
-      >
-        <v-list-item
-          v-for="candidate in candidateGroup.candidates"
-          :key="productCandidateKey(candidate)"
-          :title="candidate.label"
-          :subtitle="describeCandidate(candidate)"
-          rounded="lg"
-          @click="pickCandidate(candidate)"
-        >
-          <template #prepend>
-            <ProductThumbnail
-              class="mr-3"
-              :category="candidate.draft.category"
-              :image-url="candidate.imageUrl"
-            />
-          </template>
-          <template #append>
-            <v-icon
-              v-if="candidate.origin === 'catalogue'"
-              icon="mdi-check-circle"
-              color="primary"
-            />
-            <v-chip
-              v-else
-              prepend-icon="mdi-plus"
-            >
-              Créer
-            </v-chip>
-          </template>
-        </v-list-item>
-      </v-list>
-    </div>
-    <v-alert
-      v-if="errorMessage"
-      type="error"
-      role="alert"
-    >
-      {{ errorMessage }}
-    </v-alert>
-    <v-form
-      class="product-candidate-picker__creation"
-      @submit.prevent="createBlankProduct"
-    >
-      <v-text-field
-        v-model="newProductName"
-        class="product-candidate-picker__name"
-        label="Nom du nouveau produit"
-        hide-details
+      <CandidateList
+        :candidates="identifiedCandidates"
+        :pending-barcode="pendingBarcode"
+        is-scan-result
+        @picked="pickCandidate"
       />
-      <v-select
-        v-model="newProductCategory"
-        label="Catégorie"
-        :items="categoryOptions"
-        hide-details
+    </div>
+    <ProductCategoryStep
+      v-if="pickingStep === 'category' || chosenCategoryTile === null"
+      @chosen="chooseCategory"
+    />
+    <template v-else>
+      <PickingStepSummary
+        label="Type"
+        :value="chosenCategoryTile.label"
+        :icon="chosenCategoryTile.glyph"
+        @change="reopenCategoryStep"
       />
-      <v-btn
-        type="submit"
-        color="primary"
-        height="56"
-        :loading="isCreating"
-      >
-        Créer un produit
-      </v-btn>
-    </v-form>
+      <CardSetStep
+        v-if="pickingStep === 'card-set'"
+        v-model:filter-text="cardSetFilterText"
+        :choices="filteredCardSetChoices"
+        :is-loading="isLoadingCardSets"
+        :error-message="cardSetsErrorMessage"
+        @chosen="chooseCardSet"
+        @skipped="skipCardSet"
+      />
+      <template v-else>
+        <PickingStepSummary
+          v-if="categoryUsesCardSets(chosenCategoryTile.category)"
+          label="Extension"
+          :value="chosenCardSetLabel"
+          icon="mdi-cards-outline"
+          @change="reopenCardSetStep"
+        />
+        <v-text-field
+          v-model="searchText"
+          :label="searchFieldLabel"
+          :autofocus="cardSetId === null"
+          prepend-inner-icon="mdi-magnify"
+          :loading="isSearching"
+          clearable
+          hide-details
+        />
+        <v-chip-group
+          v-if="sealedProductKindOptions.length > 1"
+          v-model="sealedProductKind"
+          selected-class="text-primary"
+          aria-label="Type de produit scellé"
+          filter
+        >
+          <v-chip
+            v-for="sealedProductKindOption in sealedProductKindOptions"
+            :key="sealedProductKindOption"
+            :value="sealedProductKindOption"
+          >
+            {{ sealedProductKindOption }}
+          </v-chip>
+        </v-chip-group>
+        <v-alert
+          v-if="searchErrorMessage"
+          type="error"
+          role="alert"
+        >
+          {{ searchErrorMessage }}
+        </v-alert>
+        <p
+          v-for="unavailableMessage in unavailableMessages"
+          :key="unavailableMessage"
+          class="text-medium-emphasis"
+        >
+          {{ unavailableMessage }}
+        </p>
+        <p
+          v-if="hasNoResult"
+          class="text-medium-emphasis"
+          role="status"
+        >
+          Aucun article trouvé : créez-le ci-dessous.
+        </p>
+        <div
+          v-for="candidateGroup in candidateGroups"
+          :key="candidateGroup.origin"
+        >
+          <div class="kairos-label product-candidate-picker__group">
+            {{ candidateGroup.title }}
+          </div>
+          <CandidateList
+            :candidates="candidateGroup.candidates"
+            :pending-barcode="pendingBarcode"
+            @picked="pickCandidate"
+          />
+        </div>
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          role="alert"
+        >
+          {{ errorMessage }}
+        </v-alert>
+        <v-form
+          class="product-candidate-picker__creation"
+          @submit.prevent="createBlankProduct"
+        >
+          <v-text-field
+            v-model="newProductName"
+            :label="`Nouveau produit · ${chosenCategoryTile.label}`"
+            hide-details
+          />
+          <v-btn
+            type="submit"
+            color="primary"
+            height="56"
+            :loading="isCreating"
+          >
+            Créer
+          </v-btn>
+        </v-form>
+      </template>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { productCategories, productCategoryLabels } from '~~/shared/catalogue/product-category'
-import type { ProductReference } from '~~/shared/catalogue/product-reference'
-
 import type { ProductCandidate } from '~~/shared/catalogue/product-candidate'
+import type { ProductReference } from '~~/shared/catalogue/product-reference'
+import type { BlankProductContext } from '~/composables/useProductPicking'
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   identifiedCandidates?: ProductCandidate[]
   pendingBarcode?: string | null
-  focusSearch?: boolean
-}>(), { identifiedCandidates: () => [], pendingBarcode: null, focusSearch: false })
+}>(), { identifiedCandidates: () => [], pendingBarcode: null })
 
 const emit = defineEmits<{ picked: [product: ProductReference] }>()
 
-const describeCandidate = (candidate: ProductCandidate): string =>
-  props.pendingBarcode ? 'Lier ce code-barres à ce produit' : productCategoryLabels[candidate.draft.category]
+const {
+  productCategory,
+  cardSetId,
+  pickingStep,
+  chosenCategoryTile,
+  searchText,
+  sealedProductKind,
+  sealedProductKindOptions,
+  searchFieldLabel,
+  candidateGroups,
+  unavailableMessages,
+  hasNoResult,
+  isSearching,
+  searchErrorMessage,
+  chooseCategory,
+  reopenCategoryStep,
+  chooseCardSet,
+  skipCardSet,
+  reopenCardSetStep,
+} = useProductSearch()
 
-const categoryOptions = productCategories.map(category => ({ value: category, title: productCategoryLabels[category] }))
+const { cardSetFilterText, filteredCardSetChoices, isLoadingCardSets, cardSetsErrorMessage, chosenCardSetLabel }
+  = useCardSetOptions(productCategory, cardSetId)
 
-const { searchText, cardSetId, searchFieldLabel, candidateGroups, unavailableMessages, isSearching, searchErrorMessage }
-  = useProductSearch()
-const { cardSetOptions, isLoadingCardSets, cardSetsErrorMessage } = useCardSetOptions()
-const { errorMessage, isCreating, newProductName, newProductCategory, pickCandidate, createBlankProduct } = useProductPicking(
+const blankProductContext = computed<BlankProductContext>(() => ({
+  productCategory: productCategory.value,
+  seriesName: cardSetId.value === null ? null : chosenCardSetLabel.value,
+}))
+
+const { errorMessage, isCreating, newProductName, pickCandidate, createBlankProduct } = useProductPicking(
   product => emit('picked', product),
+  blankProductContext,
 )
 </script>
 
@@ -189,10 +187,6 @@ const { errorMessage, isCreating, newProductName, newProductCategory, pickCandid
 .product-candidate-picker__creation {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.product-candidate-picker__name {
-  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 </style>

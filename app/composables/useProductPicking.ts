@@ -1,12 +1,20 @@
+import type { Ref } from 'vue'
 import type { ProductCandidate } from '~~/shared/catalogue/product-candidate'
-import { productCategories, type ProductCategory } from '~~/shared/catalogue/product-category'
+import type { ProductCategory } from '~~/shared/catalogue/product-category'
 import type { ProductReference } from '~~/shared/catalogue/product-reference'
 
-export const useProductPicking = (onProductPicked: (product: ProductReference) => void) => {
+export interface BlankProductContext {
+  productCategory: ProductCategory | null
+  seriesName: string | null
+}
+
+export const useProductPicking = (
+  onProductPicked: (product: ProductReference) => void,
+  blankProductContext: Ref<BlankProductContext>,
+) => {
   const errorMessage = ref('')
   const isCreating = ref(false)
   const newProductName = ref('')
-  const newProductCategory = ref<ProductCategory>(productCategories[0]!)
 
   const createProductFrom = async (productDraft: Record<string, unknown>): Promise<boolean> => {
     if (isCreating.value) {
@@ -37,13 +45,14 @@ export const useProductPicking = (onProductPicked: (product: ProductReference) =
   }
 
   const createBlankProduct = async (): Promise<void> => {
-    if (newProductName.value.trim() === '') {
+    const { productCategory, seriesName } = blankProductContext.value
+    if (newProductName.value.trim() === '' || productCategory === null) {
       return
     }
-    if (await createProductFrom({ name: newProductName.value, category: newProductCategory.value })) {
+    if (await createProductFrom({ name: newProductName.value, category: productCategory, seriesName })) {
       newProductName.value = ''
     }
   }
 
-  return { errorMessage, isCreating, newProductName, newProductCategory, pickCandidate, createBlankProduct }
+  return { errorMessage, isCreating, newProductName, pickCandidate, createBlankProduct }
 }

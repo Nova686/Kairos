@@ -3,3 +3,9 @@ export interface CardSetOption {
   name: string
   cardCount: number
 }
+
+export interface SealedSetOption {
+  id: string
+  name: string
+  sealedProductCount: number
+}
