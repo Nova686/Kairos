@@ -217,6 +217,58 @@ describe('searchProductCandidates', () => {
     expect(unavailableSources).toEqual(['tcgdex'])
   })
 
+  it('searches only the catalogue products of a toy query, without calling TCGdex', async () => {
+    const database = await createTestDatabase()
+    const userId = await insertUser(database)
+    await createProduct(database, userId, emptyProductDraft('Peluche Pikachu', 'toy'))
+    await createProduct(database, userId, emptyProductDraft('Display Pikachu', 'pokemon-sealed'))
+    await insertCardmarketProduct(database, 501, 'Pikachu Tin')
+    const dependencies: ProductSearchDependencies = {
+      searchTcgdexCards: async () => {
+        throw new Error('must not be called')
+      },
+      listCardSetNames: async () => {
+        throw new Error('must not be called')
+      },
+    }
+
+    const { candidates } = await searchProductCandidates(database, 'pikachu', dependencies, 'toy')
+
+    expect(candidates.map(candidate => [candidate.origin, candidate.label])).toEqual([['catalogue', 'Peluche Pikachu']])
+  })
+
+  it('leaves Cardmarket sealed products and other categories out of a graded card query', async () => {
+    const database = await createTestDatabase()
+    const userId = await insertUser(database)
+    await createProduct(database, userId, emptyProductDraft('Display Pikachu', 'pokemon-sealed'))
+    await insertCardmarketProduct(database, 501, 'Pikachu Tin')
+    const dependencies: ProductSearchDependencies = {
+      ...noSources,
+      searchTcgdexCards: async () => [
+        { source: 'tcgdex', sourceCardId: 'base1-58', name: 'Pikachu', setName: 'Set de base', imageUrl: null },
+      ],
+    }
+
+    const { candidates } = await searchProductCandidates(database, 'pikachu', dependencies, 'graded-card')
+
+    expect(candidates.map(candidate => [candidate.origin, candidate.label])).toEqual([['tcgdex', 'Pikachu (Set de base)']])
+  })
+
+  it('leaves TCGdex cards out of a sealed product query', async () => {
+    const database = await createTestDatabase()
+    await insertCardmarketProduct(database, 501, 'Pikachu Tin')
+    const dependencies: ProductSearchDependencies = {
+      ...noSources,
+      searchTcgdexCards: async () => {
+        throw new Error('must not be called')
+      },
+    }
+
+    const { candidates } = await searchProductCandidates(database, 'pikachu', dependencies, 'pokemon-sealed')
+
+    expect(candidates.map(candidate => [candidate.origin, candidate.label])).toEqual([['cardmarket', 'Pikachu Tin']])
+  })
+
   it('returns nothing for a blank query without calling sources', async () => {
     const database = await createTestDatabase()
     const dependencies: ProductSearchDependencies = {

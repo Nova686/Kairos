@@ -5,7 +5,7 @@
         Ajouter un achat
       </h1>
       <p class="kairos-page-subtitle">
-        Cherchez le produit par son nom ou son code EAN, puis complétez l’achat.
+        Choisissez le type de produit, son extension si besoin, puis l’article.
       </p>
     </div>
     <div
@@ -81,7 +81,7 @@
               class="my-4"
               role="status"
             >
-              Code inconnu : cherchez le produit par son nom, le code-barres lui sera associé.
+              Code inconnu : choisissez le produit ci-dessous, le code-barres lui sera associé.
             </v-alert>
             <p
               v-if="unavailableSourcesMessage"
@@ -97,7 +97,6 @@
                 :key="pendingBarcode ?? 'identified-candidates'"
                 :identified-candidates="identifiedCandidates"
                 :pending-barcode="pendingBarcode"
-                :focus-search="isUnknownCode"
                 @picked="pickProduct"
               />
             </v-card>
